@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="dist" name="ant-javacard build">
+    <target name="applet1">
+        <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+        <javacard jckit="sdks/HIDDEN">
+        <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest1/RAMtest.cap" sources="applet/src">
+            <applet class="RAMtest" aid="52 41 4D 74 65 73 74"/>
+        </cap>
+        </javacard>
+    </target>
+    <target name="applet2">
+        <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+        <javacard jckit="sdks/HIDDEN">
+        <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest2/RAMtest.cap" sources="applet/src">
+            <applet class="RAMtest" aid="52 41 4D 74 65 73 74"/>
+        </cap>
+        </javacard>
+    </target>
+    <target name="applet3">
+        <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+        <javacard jckit="sdks/HIDDEN">
+        <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest3/RAMtest.cap" sources="applet/src">
+            <applet class="RAMtest" aid="52 41 4D 74 65 73 74"/>
+        </cap>
+        </javacard>
+    </target>
+</project>
