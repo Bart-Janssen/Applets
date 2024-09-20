@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="dist" name="ant-javacard build">
-    <target name="applet1">
+    <target name="ram1">
         <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
         <javacard jckit="sdks/HIDDEN">
         <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest1/RAMtest.cap" sources="applet/src">
@@ -8,7 +8,7 @@
         </cap>
         </javacard>
     </target>
-    <target name="applet2">
+    <target name="ram2">
         <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
         <javacard jckit="sdks/HIDDEN">
         <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest2/RAMtest.cap" sources="applet/src">
@@ -16,11 +16,19 @@
         </cap>
         </javacard>
     </target>
-    <target name="applet3">
+    <target name="ram3">
         <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
         <javacard jckit="sdks/HIDDEN">
         <cap targetsdk="sdks/HIDDEN" aid="52 41 4D 74 65 73 74 00" package="applet.ramtest" version="0.1" output="applet/RAMtest3/RAMtest.cap" sources="applet/src">
             <applet class="RAMtest" aid="52 41 4D 74 65 73 74"/>
+        </cap>
+        </javacard>
+    </target>
+    <target name="keystore">
+        <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+        <javacard jckit="sdks/HIDDEN">
+        <cap targetsdk="sdks/HIDDEN" aid="50 51 43 20 4B 65 79 73 74 6F 72 65 00" package="applet.keystore" version="0.1" output="applet/KeyStore/KeyStore.cap" sources="applet/src/keystore">
+            <applet class="KeyStore" aid="50 51 43 20 4B 65 79 73 74 6F 72 65"/>
         </cap>
         </javacard>
     </target>

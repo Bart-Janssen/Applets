@@ -6,4 +6,4 @@ if "%1"=="" (
 )
 
 cd ..
-call .\apache-ant-1.10.9\bin\ant.bat applet%1
+call .\apache-ant-1.10.9\bin\ant.bat %1
