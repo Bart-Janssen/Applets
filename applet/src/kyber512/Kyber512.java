@@ -1,13 +1,16 @@
 package applet.kyber;
 
 import javacard.framework.*;
-import javacard.security.CryptoException;
+import javacard.security.*;
 
 public class Kyber512 extends Applet
 {
+	private Sha3 sha3 = null;
+	private byte RAMinput[] = null;
+
 	private Kyber512(byte[] parameters, short offset)
 	{
-		super.register(parameters, (short) (offset + 1), parameters[offset]);
+		super.register(parameters, (short)(offset + 1), parameters[offset]);
 	}
 
 	public static void install(byte[] parameters, short offset, byte length)
@@ -18,19 +21,34 @@ public class Kyber512 extends Applet
 	@Override
 	public void process(APDU apdu) throws ISOException
 	{
-		byte[] buffer = apdu.getBuffer();
-		byte CLA = buffer[ISO7816.OFFSET_CLA];
-		byte INS = buffer[ISO7816.OFFSET_INS];
-		byte P1 = buffer[ISO7816.OFFSET_P1];
-		byte P2 = buffer[ISO7816.OFFSET_P2];
+		byte[] apduBuffer = apdu.getBuffer();
 
-		if ((CLA == (byte)0x00) && (INS == (byte)0xA4) && (P1 == (byte)0x04) && (P2 == (byte)0x00)) return; //Select, return 0x9000
+		// ignore the applet select command dispatched to the process
+		if (selectingApplet()) return;
 
-		//Force CLA and INS to be 0x00, 0x00
-		if (CLA != (byte)0x00 || INS != (byte)0x00 || P1 != (byte)0x00) ISOException.throwIt(ISO7816.SW_COMMAND_NOT_ALLOWED);
 
-		if (true) return;
+		if (apduBuffer[ISO7816.OFFSET_CLA] == (byte)0x00)
+		{
+			switch ( apduBuffer[ISO7816.OFFSET_INS] )
+			{
+				case (byte)0x01:
+					this.sha3Digest(apdu, Sha3.ALG_SHA3_512); break;
+				default:
+					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
+					break;
+			}
+		}
+		else ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
+	}
 
-		ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
+	public void sha3Digest(APDU apdu, byte algorithm)
+	{
+		this.sha3 = Sha3.getInstance(algorithm);
+		byte[] data = apdu.getBuffer();
+		short length = apdu.setIncomingAndReceive();
+		RAMinput = JCSystem.makeTransientByteArray((short)0xFF, JCSystem.CLEAR_ON_DESELECT);
+		Util.arrayCopyNonAtomic(data, ISO7816.OFFSET_CDATA, RAMinput, (short)0, length);
+		short hash = this.sha3.doFinal(RAMinput, (short)0, length, data, (short)0);
+		apdu.setOutgoingAndSend((short)0, hash);
 	}
 }
