@@ -13,22 +13,15 @@ import javacard.security.MessageDigest;
  *
  */
 
-public class Sha3 extends MessageDigest {
+public class Sha3 {
 
     //Defines
     public static final short   KECCAKF_ROUNDS      = (short)  24;
     public static final short   WORDL               = (short)   8;
     public static final short   STATE_BYTES         = (short) 200;
     public static final short   STATE_SLICE         = (short)  25;
-    public final static byte    ALG_SHA3_224        = (byte)    7;
     public final static byte    ALG_SHA3_256        = (byte)    8;
-    public final static byte    ALG_SHA3_384        = (byte)    9;
     public final static byte    ALG_SHA3_512        = (byte)   10;
-
-    public final static byte    ALG_KECCAK_224      = (byte)   11;
-    public final static byte    ALG_KECCAK_256      = (byte)   12;
-    public final static byte    ALG_KECCAK_384      = (byte)   13;
-    public final static byte    ALG_KECCAK_512      = (byte)   14;
 
     //* this stuff is in big endian!
     final static byte[] KECCAKF_RNDC = {
@@ -136,7 +129,6 @@ public class Sha3 extends MessageDigest {
 
     //bitwise XOR of two words, save in w1
     //REQUIRES EXACT INDEX
-    //swap to short for 2x speed?
     void xorWords(byte[] w1, short index1, byte[] w2, short index2) {
         short i;
         for (i = 0; i < WORDL; i++)
@@ -145,7 +137,6 @@ public class Sha3 extends MessageDigest {
 
     //bitwise AND of two words, save in w1
     //REQUIRES EXACT INDEX
-    //swap to short for 2x speed? inline?
     void andWords(byte[] w1, short index1, byte[] w2, short index2) {
         short i;
         for (i = 0; i < WORDL; i++)
@@ -154,7 +145,6 @@ public class Sha3 extends MessageDigest {
 
     //Negate a word w2, save it into w1
     //REQUIRES EXACT INDEX
-    //swap to short for 2x speed?
     void negateWord(byte[] w1, short index1, byte[] w2, short index2) {
         short i;
         for (i = 0; i < WORDL; i++)
@@ -317,8 +307,6 @@ public class Sha3 extends MessageDigest {
     protected Sha3() {}
 
     //generate hash of all data, reset engine
-    //* TODO throws CryptoException.ILLEGAL_USE if the accumulated message length is greater than the maximum length supported by the algorithm.
-    @Override
     public short doFinal(byte[] inBuff, short inOffset, short inLength,
                          byte[] outBuff, short outOffset) throws CryptoException {
         short i;
@@ -334,52 +322,14 @@ public class Sha3 extends MessageDigest {
         return mdlen;
     }
 
-    // return the algorithm code for each length.
-    // Codes are defined as a loose continuation of javacard.security.MessageDigest alg list.
-    @Override
-    public byte getAlgorithm() {
-        switch (mdlen) {
-            case 28:
-                return ALG_SHA3_224;
-            case 32:
-                return ALG_SHA3_256;
-            case 48:
-                return ALG_SHA3_384;
-            case 64:
-            default:
-                return ALG_SHA3_512;
-        }
-    }
-
     // get sha3 instance
     public static Sha3 getInstance(byte algorithm) throws CryptoException {
         switch (algorithm) {
-            case ALG_KECCAK_224:
-                pad = 0x01;
-            case ALG_SHA3_224:
-                //not supported by MessageDigest
-                mdlen = (short) 28;
-                rsiz = (short) 144;
-                break;
-
-            case ALG_KECCAK_256:
-                pad = 0x01;
             case ALG_SHA3_256:
-            case ALG_SHA_256:
                 mdlen = (short) 32;
                 rsiz = (short) 136;
                 break;
-            case ALG_KECCAK_384:
-                pad = 0x01;
-            case ALG_SHA3_384:
-            case ALG_SHA_384:
-                mdlen = (short) 48;
-                rsiz = (short) 104;
-                break;
-            case ALG_KECCAK_512:
-                pad = 0x01;
             case ALG_SHA3_512:
-            case ALG_SHA_512:
                 mdlen = (short) 64;
                 rsiz = (short) 72;
                 break;
@@ -394,12 +344,6 @@ public class Sha3 extends MessageDigest {
         return m_instance;
     }
 
-    @Override
-    public byte getLength() {
-        return mdlen;
-    }
-
-    @Override
     public void reset() {
         //clear arrays and partitioning tracker
         Util.arrayFillNonAtomic(st,   (short) 0, STATE_BYTES,         (byte) 0);
@@ -411,7 +355,6 @@ public class Sha3 extends MessageDigest {
 
     //add more data into hash
     //input buffer, offset in buffer, byte length of message
-    @Override
     public void update(byte[] inBuff, short inOffset, short inLength) {
         short j = pt;
         short i;
