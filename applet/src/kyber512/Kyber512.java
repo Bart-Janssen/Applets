@@ -5,7 +5,7 @@ import javacard.security.*;
 
 public class Kyber512 extends Applet
 {
-	private Sha3 sha3 = null;
+	private Keccak keccak = null;
 	private byte RAMinput[] = null;
 
 	private Kyber512(byte[] parameters, short offset)
@@ -32,7 +32,11 @@ public class Kyber512 extends Applet
 			switch ( apduBuffer[ISO7816.OFFSET_INS] )
 			{
 				case (byte)0x01:
-					this.sha3Digest(apdu, Sha3.ALG_SHA3_512); break;
+					this.computeKeccak(apdu, Keccak.ALG_SHA3_512); break;
+				case (byte)0x02:
+					this.computeKeccak(apdu, Keccak.ALG_SHAKE_128); break;
+				case (byte)0x03:
+					this.computeKeccak(apdu, Keccak.ALG_SHAKE_256); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
@@ -41,14 +45,15 @@ public class Kyber512 extends Applet
 		else ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
 	}
 
-	public void sha3Digest(APDU apdu, byte algorithm)
+	public void computeKeccak(APDU apdu, byte algorithm)
 	{
-		this.sha3 = Sha3.getInstance(algorithm);
+		this.keccak = Keccak.getInstance(algorithm);
+		this.keccak.reset();
 		byte[] data = apdu.getBuffer();
 		short length = apdu.setIncomingAndReceive();
 		RAMinput = JCSystem.makeTransientByteArray((short)0xFF, JCSystem.CLEAR_ON_DESELECT);
 		Util.arrayCopyNonAtomic(data, ISO7816.OFFSET_CDATA, RAMinput, (short)0, length);
-		short hash = this.sha3.doFinal(RAMinput, (short)0, length, data, (short)0);
+		short hash = this.keccak.doFinal(RAMinput, (short)0, length, data, (short)0);
 		apdu.setOutgoingAndSend((short)0, hash);
 	}
 }

@@ -13,7 +13,7 @@ import javacard.security.MessageDigest;
  *
  */
 
-public class Sha3 {
+public class Keccak {
 
     //Defines
     public static final short   KECCAKF_ROUNDS      = (short)  24;
@@ -22,6 +22,8 @@ public class Sha3 {
     public static final short   STATE_SLICE         = (short)  25;
     public final static byte    ALG_SHA3_256        = (byte)    8;
     public final static byte    ALG_SHA3_512        = (byte)   10;
+    public final static byte    ALG_SHAKE_128       = (byte)   15;
+    public final static byte    ALG_SHAKE_256       = (byte)   16;
 
     //* this stuff is in big endian!
     final static byte[] KECCAKF_RNDC = {
@@ -63,15 +65,15 @@ public class Sha3 {
     final static byte[] ROTL_MASK = {
             (byte) 0x00, (byte) 0x01, (byte) 0x03, (byte) 0x07, (byte) 0x0F, (byte) 0x1F, (byte) 0x3F, (byte) 0x7F};
 
-    //sha3 instance
-    private static Sha3  m_instance = null;  // instance of cipher itself
+    //Keccak instance
+    private static Keccak  m_instance = null;  // instance of cipher itself
 
-    //sha3 context
+    //Keccak context
     private static byte  mdlen;
     private static short pt;
     private static short rsiz;
 
-    //Pad for NIST-Sha3 = 0x06, Keccak = 0x01
+    //Pad for NIST-Sha3 = 0x06, Shake = 0x1F
     private static byte pad = 0x06;
 
     //Arrays
@@ -304,7 +306,7 @@ public class Sha3 {
     // BEGIN INTERFACE //
 
     //Constructor
-    protected Sha3() {}
+    protected Keccak() {}
 
     //generate hash of all data, reset engine
     public short doFinal(byte[] inBuff, short inOffset, short inLength,
@@ -322,8 +324,8 @@ public class Sha3 {
         return mdlen;
     }
 
-    // get sha3 instance
-    public static Sha3 getInstance(byte algorithm) throws CryptoException {
+    // get Keccak instance
+    public static Keccak getInstance(byte algorithm) throws CryptoException {
         switch (algorithm) {
             case ALG_SHA3_256:
                 mdlen = (short) 32;
@@ -331,7 +333,17 @@ public class Sha3 {
                 break;
             case ALG_SHA3_512:
                 mdlen = (short) 64;
-                rsiz = (short) 72;
+                rsiz = (short)  72;
+                break;
+            case ALG_SHAKE_128:
+                pad = 0x1F;
+                mdlen = (short) 32;
+                rsiz = (short) 168;
+                break;
+            case ALG_SHAKE_256:
+                pad = 0x1F;
+                mdlen = (short) 64;
+                rsiz = (short) 136;
                 break;
             default:
                 throw new CryptoException(CryptoException.NO_SUCH_ALGORITHM);
@@ -339,7 +351,7 @@ public class Sha3 {
         pt = 0;
 
         if (m_instance == null) {
-            m_instance = new Sha3();
+            m_instance = new Keccak();
         }
         return m_instance;
     }
