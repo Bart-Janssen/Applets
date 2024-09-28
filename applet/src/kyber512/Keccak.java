@@ -69,7 +69,7 @@ public class Keccak {
     private static Keccak  m_instance = null;  // instance of cipher itself
 
     //Keccak context
-    private static byte  mdlen;
+    private static short  mdlen;
     private static short pt;
     private static short rsiz;
 
@@ -309,29 +309,58 @@ public class Keccak {
     protected Keccak() {}
 
     //generate hash of all data, reset engine
-    public short doFinal(byte[] inBuff, short inOffset, short inLength,
-                         byte[] outBuff, short outOffset) throws CryptoException {
+    public short doFinal(byte[] inBuff, byte[] outBuff) throws CryptoException {
+        this.reset();
         short i;
-
+        short inOffset = 0;
+        short outOffset = 0;
+        short inLength = (short)inBuff.length;
         update(inBuff, inOffset, inLength);
 
         st[pt] ^= pad;
         st[(short) (rsiz-1)] ^= 0x80;
-        keccakf(st);
-        for (i = 0; i < mdlen; i++) {
-            outBuff[(short) (outOffset + i)] = st[i];
+
+        short chunks = (short)(mdlen/rsiz);
+        short last = (short)(mdlen%rsiz);
+        short copiedBytes = 0;
+
+        while (chunks > 0)
+        {
+            keccakf(st);
+            chunks--;
+            for (i = 0; i < rsiz; i++)
+            {
+                outBuff[(short)(copiedBytes + outOffset + i)] = st[i];
+            }
+            copiedBytes+=rsiz;
+        }
+        if (last > 0)
+        {
+            keccakf(st);
+            for (i = 0; i < last; i++)
+            {
+                outBuff[(short)(copiedBytes + outOffset + i)] = st[i];
+            }
         }
         return mdlen;
+    }
+
+    // Set shake return length
+    public void setShakeDigestLength(short length)
+    {
+        mdlen = length;
     }
 
     // get Keccak instance
     public static Keccak getInstance(byte algorithm) throws CryptoException {
         switch (algorithm) {
             case ALG_SHA3_256:
+                pad = 0x06;
                 mdlen = (short) 32;
                 rsiz = (short) 136;
                 break;
             case ALG_SHA3_512:
+                pad = 0x06;
                 mdlen = (short) 64;
                 rsiz = (short)  72;
                 break;
@@ -372,7 +401,7 @@ public class Keccak {
         short i;
         for (i = 0; i < inLength; i++) {
             //this is big endian
-            st[j++] ^= inBuff[(byte) (inOffset + i)];
+            st[j++] ^= inBuff[(short) (inOffset + i)];
             if (j >= rsiz) {
                 keccakf(st);
                 j = 0;

@@ -26,11 +26,12 @@ public class Kyber512 extends Applet
 		// ignore the applet select command dispatched to the process
 		if (selectingApplet()) return;
 
-
 		if (apduBuffer[ISO7816.OFFSET_CLA] == (byte)0x00)
 		{
 			switch ( apduBuffer[ISO7816.OFFSET_INS] )
 			{
+				case (byte)0x00:
+					this.computeKeccak(apdu, Keccak.ALG_SHA3_256); break;
 				case (byte)0x01:
 					this.computeKeccak(apdu, Keccak.ALG_SHA3_512); break;
 				case (byte)0x02:
@@ -48,12 +49,12 @@ public class Kyber512 extends Applet
 	public void computeKeccak(APDU apdu, byte algorithm)
 	{
 		this.keccak = Keccak.getInstance(algorithm);
-		this.keccak.reset();
+//		keccak.setShakeDigestLength((short)672);
 		byte[] data = apdu.getBuffer();
 		short length = apdu.setIncomingAndReceive();
-		RAMinput = JCSystem.makeTransientByteArray((short)0xFF, JCSystem.CLEAR_ON_DESELECT);
+		RAMinput = JCSystem.makeTransientByteArray(length, JCSystem.CLEAR_ON_DESELECT);
 		Util.arrayCopyNonAtomic(data, ISO7816.OFFSET_CDATA, RAMinput, (short)0, length);
-		short hash = this.keccak.doFinal(RAMinput, (short)0, length, data, (short)0);
+		short hash = this.keccak.doFinal(RAMinput, data);
 		apdu.setOutgoingAndSend((short)0, hash);
 	}
 }
