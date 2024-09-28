@@ -69,7 +69,7 @@ public class Keccak {
     private static Keccak  m_instance = null;  // instance of cipher itself
 
     //Keccak context
-    private static short  mdlen;
+    private static short mdlen;
     private static short pt;
     private static short rsiz;
 
@@ -117,7 +117,7 @@ public class Keccak {
 
         //rotate using masks
         if (shift > 0) {
-            rotl[8] = (byte)(rotl[0]);
+            rotl[8] = rotl[0];
             rotl[0] = (byte)((byte)(rotl[0] << shift) | (byte)((rotl[1] >> comp) & ROTL_MASK[shift]));
             rotl[1] = (byte)((byte)(rotl[1] << shift) | (byte)((rotl[2] >> comp) & ROTL_MASK[shift]));
             rotl[2] = (byte)((byte)(rotl[2] << shift) | (byte)((rotl[3] >> comp) & ROTL_MASK[shift]));
