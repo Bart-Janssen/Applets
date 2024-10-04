@@ -40,4 +40,12 @@
         </cap>
         </javacard>
     </target>
+    <target name="test">
+        <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+        <javacard jckit="sdks/HIDDEN">
+        <cap targetsdk="sdks/HIDDEN" aid="74 65 73 74 00 00" package="applet.test" version="0.1" output="applet/Test/Test.cap" sources="applet/src/test">
+            <applet class="Test" aid="74 65 73 74 00"/>
+        </cap>
+        </javacard>
+    </target>
 </project>
