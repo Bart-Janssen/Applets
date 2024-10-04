@@ -2,9 +2,6 @@ package applet.test;
 
 import javacard.framework.*;
 import javacard.security.*;
-
-import java.util.Random;
-
 public class Test extends Applet
 {
 
@@ -30,8 +27,7 @@ public class Test extends Applet
 		{
 			switch (apduBuffer[ISO7816.OFFSET_INS])
 			{
-				case (byte)0x00:
-					this.random(apdu); break;
+				case (byte)0x00: this.random(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
