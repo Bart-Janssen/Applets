@@ -8,6 +8,10 @@ public class Kyber512 extends Applet
 	private Keccak keccak = null;
 	private byte RAMinput[] = null;
 
+	private short receivedPrivateKeyLength = 0;
+
+	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
+
 	private Kyber512(byte[] parameters, short offset)
 	{
 		super.register(parameters, (short)(offset + 1), parameters[offset]);
@@ -44,8 +48,6 @@ public class Kyber512 extends Applet
 		else ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
 	}
 
-	private short receivedPrivateKeyLength = 0;
-
 	private void obtainPrivateKey(APDU apdu)
 	{
 		byte[] buffer = apdu.getBuffer();
@@ -68,9 +70,7 @@ public class Kyber512 extends Applet
 
 	public void generateKyber512KeyPair(APDU apdu)
 	{
-		byte paramsK = (byte)2;
-		KyberAlgorithm.getInstance().generateKeys(paramsK, KyberParams.Kyber512SKBytes);
-
+		kyber.generateKeys(KyberParams.Kyber512SKBytes);
 	}
 
 	public void computeKeccak(APDU apdu, byte algorithm)
