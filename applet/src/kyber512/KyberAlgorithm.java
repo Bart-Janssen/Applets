@@ -41,7 +41,6 @@ public class KyberAlgorithm
             random.nextBytes(rnd, (short)0, (short)32);
             random.close();
             short offsetEnd = (short)keyPair.getPrivateKey().length;
-            offsetEnd = 768;
             Util.arrayCopyNonAtomic(this.keyPair.getPrivateKey(), (short)0, privateKeyFixedLength, (short)0, offsetEnd);
             Util.arrayCopyNonAtomic(this.keyPair.getPublicKey(), (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.getPublicKey().length);
             offsetEnd = (short)(offsetEnd + this.keyPair.getPublicKey().length);
@@ -86,6 +85,49 @@ public class KyberAlgorithm
         }
         skpv = Poly.getInstance().polyVectorNTT(skpv, paramsK);
         skpv = Poly.getInstance().polyVectorReduce(skpv, paramsK);
+        e = Poly.getInstance().polyVectorNTT(e, paramsK);
+        for (byte i = 0; i < paramsK; i++)
+        {
+            short[] polyArow = new short[(short)(384*paramsK)];
+            Poly.getInstance().arrayCopyNonAtomic(a, (short)(i*paramsK*384), polyArow,(short)0,(short)(384*paramsK));
+            short[] temp = Poly.getInstance().polyVectorPointWiseAccMont(polyArow, skpv, paramsK);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().polyToMont(temp), (short)0, pkpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+        }
+        pkpv = Poly.getInstance().polyVectorAdd(pkpv, e, paramsK);
+        pkpv = Poly.getInstance().polyVectorReduce(pkpv, paramsK);
+        KeyPair keyPair = KeyPair.getInstance(paramsK);
+        keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
+        keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
+    }
+
+    public byte[] packPrivateKey(short[] privateKey, byte paramsK)
+    {
+        return Poly.getInstance().polyVectorToBytes(privateKey, paramsK);
+    }
+
+    public byte[] packPublicKey(short[] publicKey, byte[] seed, byte paramsK)
+    {
+        byte[] initialArray = Poly.getInstance().polyVectorToBytes(publicKey, paramsK);
+        byte[] packedPublicKey;
+        switch (paramsK)
+        {
+            //Only kyber 512 for now
+            case 2: default:
+            packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
+            Util.arrayCopyNonAtomic(initialArray, (short)0, packedPublicKey, (short)0, (short)initialArray.length);
+            Util.arrayCopyNonAtomic(seed, (short)0, packedPublicKey, (short)initialArray.length, (short)seed.length);
+            return packedPublicKey;
+//            case 3:
+//                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
+//                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
+//                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+//                return packedPublicKey;
+//            default:
+//                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
+//                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
+//                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+//                return packedPublicKey;
+        }
     }
 
     public short[] generateMatrix(byte[] seed, boolean transposed)

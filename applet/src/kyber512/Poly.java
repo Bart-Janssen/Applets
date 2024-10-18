@@ -56,7 +56,7 @@ public class Poly
             //i=1, row = 384, 1*384 = 384 -> 768
             short[] row = new short[(short)384];
             this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = polyNTT(row);
+            row = this.polyNTT(row);
             this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
@@ -70,7 +70,7 @@ public class Poly
             //i=1, row = 384, 1*384 = 384 -> 768
             short[] row = new short[(short)384];
             this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = polyReduce(row);
+            row = this.polyReduce(row);
             this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
@@ -124,7 +124,18 @@ public class Poly
     {
         //(long) ((long) a * (long) b)
         Arithmetic.multiplyShorts(a,b, jc);
-        return montgomeryReduce(jc);
+        return this.montgomeryReduce(jc);
+    }
+
+    public short[] polyToMont(short[] polyR)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            //polyR[i] = this.montgomeryReduce((int) (polyR[i] * 1353));
+            Arithmetic.multiplyShorts(polyR[i],(short)1353, jc);
+            polyR[i] = this.montgomeryReduce(jc);
+        }
+        return polyR;
     }
 
     public short montgomeryReduce(short[] jc)
@@ -233,17 +244,6 @@ public class Poly
         return r;
     }
 
-    public void sumByteArrays(byte[] x, byte[] y)
-    {
-        short carry = 0;
-        for (byte i = 2; i >= 0; i--)
-        {
-            short temp = (short)((x[i]&0xFF) + (y[i]&0xFF) + carry);
-            x[i] = (byte)(temp&0xFF);
-            carry = (short)(temp>>8);
-        }
-    }
-
     public byte[] generatePRFByteArray(short l, byte[] key, byte nonce)
     {
         byte[] hash = new byte[l];
@@ -283,5 +283,80 @@ public class Poly
             Util.arrayCopyNonAtomic(byteA, (short)0, r, (short)(i * KyberParams.paramsPolyBytes), (short)byteA.length);
         }
         return r;
+    }
+
+    public short[] polyVectorPointWiseAccMont(short[] polyA, short[] polyB, byte paramsK)
+    {
+        short rowSize = 384;
+        short[] Brow = new short[rowSize];
+        this.arrayCopyNonAtomic(polyB, (short)0, Brow, (short)0, rowSize);
+        short[] polyArow = new short[rowSize];
+        this.arrayCopyNonAtomic(polyA, (short)0, polyArow, (short)0, rowSize);
+        //variable r can be removed since polyBaseMulMont returns polyArow
+        short[] r = this.polyBaseMulMont(polyArow, Brow);
+        for (byte i = 1; i < paramsK; i++)
+        {
+            short[] Arow = new short[rowSize];
+            this.arrayCopyNonAtomic(polyA, (short)(i*rowSize), Arow, (short)0, rowSize);
+            this.arrayCopyNonAtomic(polyB, (short)(i*rowSize), Brow, (short)0, rowSize);
+            short[] t = this.polyBaseMulMont(Arow, Brow);
+            r = this.polyAdd(r, t);
+        }
+        return this.polyReduce(r);
+    }
+
+    public short[] polyBaseMulMont(short[] polyA, short[] polyB)
+    {
+        for (byte i = 0; i < (KyberParams.paramsN / 4); i++)
+        {
+            short[] rx = this.baseMultiplier(
+                    polyA[(short)(4 * i + 0)], polyA[(short)(4 * i + 1)],
+                    polyB[(short)(4 * i + 0)], polyB[(short)(4 * i + 1)],
+                    Poly.nttZetas[64 + i]
+            );
+            short[] ry = this.baseMultiplier(
+                    polyA[(short)(4 * i + 2)], polyA[(short)(4 * i + 3)],
+                    polyB[(short)(4 * i + 2)], polyB[(short)(4 * i + 3)],
+                    (short)(-1 * Poly.nttZetas[(short)(64 + i)])
+            );
+            polyA[(short)(4 * i + 0)] = rx[0];
+            polyA[(short)(4 * i + 1)] = rx[1];
+            polyA[(short)(4 * i + 2)] = ry[0];
+            polyA[(short)(4 * i + 3)] = ry[1];
+        }
+        return polyA;
+    }
+
+    public short[] baseMultiplier(short a0, short a1, short b0, short b1, short zeta)
+    {
+        short[] r = new short[2];
+        r[0] = this.modQMulMont(a1, b1);
+        r[0] = this.modQMulMont(r[0], zeta);
+        r[0] = (short)(r[0] + this.modQMulMont(a0, b0));
+        r[1] = this.modQMulMont(a0, b1);
+        r[1] = (short)(r[1] + this.modQMulMont(a1, b0));
+        return r;
+    }
+
+    public short[] polyAdd(short[] polyA, short[] polyB)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            polyA[i] = (short)(polyA[i] + polyB[i]);
+        }
+        return polyA;
+    }
+
+    public short[] polyVectorAdd(short[] polyA, short[] polyB, byte paramsK)
+    {
+        short rowSize = 384;
+        for (byte i = 0; i < paramsK; i++)
+        {
+            for (short j = 0; j < rowSize; j++)
+            {
+                polyA[(short)((i * rowSize) + j)] += polyB[(short)((i * rowSize) + j)];
+            }
+        }
+        return polyA;
     }
 }
