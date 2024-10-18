@@ -9,6 +9,7 @@ public class Kyber512 extends Applet
 	private byte RAMinput[] = null;
 
 	private short receivedPrivateKeyLength = 0;
+	private short receivedPublicKeyLength = 0;
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
 
@@ -32,7 +33,7 @@ public class Kyber512 extends Applet
 
 		if (apduBuffer[ISO7816.OFFSET_CLA] == (byte)0x00)
 		{
-			switch ( apduBuffer[ISO7816.OFFSET_INS] )
+			switch (apduBuffer[ISO7816.OFFSET_INS])
 			{
 				case (byte)0x00: this.computeKeccak(apdu, Keccak.ALG_SHA3_256); break;
 				case (byte)0x01: this.computeKeccak(apdu, Keccak.ALG_SHA3_512); break;
@@ -40,6 +41,7 @@ public class Kyber512 extends Applet
 				case (byte)0x03: this.computeKeccak(apdu, Keccak.ALG_SHAKE_256); break;
 				case (byte)0x04: this.generateKyber512KeyPair(apdu); break;
 				case (byte)0x05: this.obtainPrivateKey(apdu); break;
+				case (byte)0x06: this.obtainPublicKey(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
@@ -66,6 +68,26 @@ public class Kyber512 extends Applet
 			ISOException.throwIt((short)0x5000);
 		}
 		receivedPrivateKeyLength=0;
+	}
+
+	private void obtainPublicKey(APDU apdu)
+	{
+		byte[] buffer = apdu.getBuffer();
+		short p = (short)255;
+		byte[] publicKey = KeyPair.getInstance((byte)2).getPublicKey();
+		if ((short)(receivedPublicKeyLength+255) > publicKey.length)
+		{
+			p = (short)(publicKey.length-receivedPublicKeyLength);
+		}
+		Util.arrayCopyNonAtomic(publicKey, receivedPublicKeyLength, buffer, (short)0x0000, p);
+		apdu.setOutgoingAndSend((short)0x0000, p);
+
+		receivedPublicKeyLength+=(short)255;
+		if (receivedPublicKeyLength < publicKey.length)
+		{
+			ISOException.throwIt((short)0x5000);
+		}
+		receivedPublicKeyLength=0;
 	}
 
 	public void generateKyber512KeyPair(APDU apdu)
