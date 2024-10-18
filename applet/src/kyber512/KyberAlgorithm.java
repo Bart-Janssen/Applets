@@ -59,9 +59,9 @@ public class KyberAlgorithm
 
     public void generateKyberKeys() throws Exception
     {
-        short[] skpv = Poly.generateNewPolyVector(this.paramsK);
-        short[] pkpv = Poly.generateNewPolyVector(this.paramsK);
-        short[] e = Poly.generateNewPolyVector(this.paramsK);
+        short[] skpv = Poly.getInstance().generateNewPolyVector(this.paramsK);
+        short[] pkpv = Poly.getInstance().generateNewPolyVector(this.paramsK);
+        short[] e = Poly.getInstance().generateNewPolyVector(this.paramsK);
         byte[] publicSeed = JCSystem.makeTransientByteArray(KyberParams.paramsSymBytes, JCSystem.CLEAR_ON_DESELECT);
         byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
@@ -76,14 +76,16 @@ public class KyberAlgorithm
         byte nonce = (byte)0;
         for (byte i = 0; i < paramsK; i++)
         {
-            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
             nonce = (byte)(nonce + (byte)1);
         }
         for (byte i = 0; i < paramsK; i++)
         {
-            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
             nonce = (byte)(nonce + (byte)1);
         }
+        skpv = Poly.getInstance().polyVectorNTT(skpv, paramsK);
+        skpv = Poly.getInstance().polyVectorReduce(skpv, paramsK);
     }
 
     public short[] generateMatrix(byte[] seed, boolean transposed)
@@ -117,7 +119,7 @@ public class KyberAlgorithm
                 Util.arrayCopyNonAtomic(buf,(short)0, buff,(short)0, (short)504);
                 this.generateUniform(buff, (short)504, KyberParams.paramsN);
                 short ui = this.uniformI;
-                Poly.arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
+                Poly.getInstance().arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
                 while (ui < KyberParams.paramsN)//Occasionally, this code is not always executed
                 {
                     Util.arrayCopyNonAtomic(buf,(short)504, buff,(short)0, (short)168);
