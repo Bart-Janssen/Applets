@@ -24,6 +24,8 @@ public class KyberAlgorithm
     private KeyPair keyPair;
     private short[] uniformR;
     private short uniformI = 0;
+    public byte[] cipheredText;
+    public byte[] secretKey;
 
     public void generateKeys(short privateKeyBytes)
     {
@@ -33,27 +35,75 @@ public class KyberAlgorithm
             byte[] privateKeyFixedLength = new byte[privateKeyBytes];
             this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
             byte[] encodedHash = new byte[32];
-            this.keccak.doFinal(this.keyPair.getPublicKey(), encodedHash);
+            this.keccak.doFinal(this.keyPair.publicKey, encodedHash);
             byte[] pkh = new byte[encodedHash.length];
             Util.arrayCopyNonAtomic(encodedHash, (short)0, pkh, (short)0, (short)encodedHash.length);
             byte[] rnd = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
-            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-            random.nextBytes(rnd, (short)0, (short)32);
-            random.close();
-            short offsetEnd = (short)keyPair.getPrivateKey().length;
-            Util.arrayCopyNonAtomic(this.keyPair.getPrivateKey(), (short)0, privateKeyFixedLength, (short)0, offsetEnd);
-            Util.arrayCopyNonAtomic(this.keyPair.getPublicKey(), (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.getPublicKey().length);
-            offsetEnd = (short)(offsetEnd + this.keyPair.getPublicKey().length);
+//            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+//            random.nextBytes(rnd, (short)0, (short)32);
+//            random.close();
+            short offsetEnd = (short)keyPair.privateKey.length;
+            Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, privateKeyFixedLength, (short)0, offsetEnd);
+            Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.publicKey.length);
+            offsetEnd = (short)(offsetEnd + this.keyPair.publicKey.length);
             Util.arrayCopyNonAtomic(pkh, (short)0, privateKeyFixedLength, offsetEnd, (short)pkh.length);
             offsetEnd += (short)pkh.length;
             Util.arrayCopyNonAtomic(rnd, (short)0, privateKeyFixedLength, offsetEnd, (short)rnd.length);
-            this.keyPair.setPrivateKey(privateKeyFixedLength);
+            this.keyPair.privateKey = privateKeyFixedLength;
             //priv = priv || pub || pkh (pub hash) || rnd
         }
         catch (Exception e)
         {
             ISOException.throwIt(ISO7816.SW_UNKNOWN);
         }
+    }
+
+    public void encapsulate()
+    {
+        try
+        {
+            byte[] variant = new byte[32];
+            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+            random.nextBytes(variant, (short)0, (short)32);
+            random.close();
+            byte[] publicKey = KeyPair.getInstance((byte)2).publicKey;
+
+            byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+            byte[] buf1 = new byte[32];
+            this.keccak.doFinal(variant, buf1);
+            byte[] buf2 = new byte[32];
+            this.keccak.doFinal(publicKey, buf2);
+            byte[] buf3 = new byte[(short)(buf1.length + buf2.length)];
+            Util.arrayCopyNonAtomic(buf1, (short)0, buf3, (short)0, (short)buf1.length);
+            Util.arrayCopyNonAtomic(buf2, (short)0, buf3, (short)buf1.length, (short)buf2.length);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+            byte[] kr = new byte[64];
+            this.keccak.doFinal(buf3, kr);
+            byte[] subKr = new byte[(short)(kr.length - KyberParams.paramsSymBytes)];
+            Util.arrayCopyNonAtomic(kr, KyberParams.paramsSymBytes, subKr, (short)0, (short)subKr.length);
+            byte[] ciphertext = this.encrypt(buf1, publicKey, subKr);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+            byte[] krc = new byte[32];
+            this.keccak.doFinal(ciphertext, krc);
+            byte[] newKr = new byte[(short)(KyberParams.paramsSymBytes + krc.length)];
+            Util.arrayCopyNonAtomic(kr, (short)0, newKr, (short)0, KyberParams.paramsSymBytes);
+            Util.arrayCopyNonAtomic(krc, (short)0, newKr, KyberParams.paramsSymBytes, (short)krc.length);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+            this.keccak.setShakeDigestLength((short)32);
+            this.keccak.doFinal(newKr, sharedSecret);
+            this.cipheredText = ciphertext;//dont do this, use it as reference
+            this.secretKey = sharedSecret;//dont do this, use it as reference
+        }
+        catch (Exception e)
+        {
+            ISOException.throwIt(ISO7816.SW_UNKNOWN);
+        }
+    }
+
+    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins)
+    {
+        return new byte[0];
     }
 
     public void generateKyberKeys() throws Exception
@@ -65,9 +115,9 @@ public class KyberAlgorithm
         byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         byte[] fullSeed = new byte[(byte)64];
-        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-        random.nextBytes(publicSeed, (short)0, (short)32);
-        random.close();
+//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+//        random.nextBytes(publicSeed, (short)0, (short)32);
+//        random.close();
         this.keccak.doFinal(publicSeed, fullSeed);
         Util.arrayCopyNonAtomic(fullSeed, (short)0, publicSeed, (short)0, KyberParams.paramsSymBytes);
         Util.arrayCopyNonAtomic(fullSeed, KyberParams.paramsSymBytes, noiseSeed, (short)0, KyberParams.paramsSymBytes);
@@ -96,8 +146,8 @@ public class KyberAlgorithm
         pkpv = Poly.getInstance().polyVectorAdd(pkpv, e, paramsK);
         pkpv = Poly.getInstance().polyVectorReduce(pkpv, paramsK);
         KeyPair keyPair = KeyPair.getInstance(paramsK);
-        keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
-        keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
+        keyPair.privateKey = this.packPrivateKey(skpv, paramsK);
+        keyPair.publicKey = this.packPublicKey(pkpv, publicSeed, paramsK);
     }
 
     public byte[] packPrivateKey(short[] privateKey, byte paramsK)
