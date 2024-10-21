@@ -1,1 +1,1 @@
-# RAM test
+# Applets for PQC project
