@@ -9,6 +9,8 @@ public class Kyber512 extends Applet
 
 	private short receivedPrivateKeyLength = 0;
 	private short receivedPublicKeyLength = 0;
+	private short receivedSecretKeyLength = 0;
+	private short receivedEncapsulationLength = 0;
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
 
@@ -39,6 +41,8 @@ public class Kyber512 extends Applet
 //				case (byte)0x03: this.decapsulate(apdu); break;
 				case (byte)0x04: this.obtainPrivateKey(apdu); break;
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
+				case (byte)0x06: this.obtainSecretKey(apdu); break;
+				case (byte)0x07: this.obtainEncapsulation(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
@@ -56,7 +60,46 @@ public class Kyber512 extends Applet
 	{
 		//temporarly disabled random for testing
 		kyber.encapsulate();
-		
+	}
+
+	private void obtainSecretKey(APDU apdu)
+	{
+		byte[] buffer = apdu.getBuffer();
+		short p = (short)255;
+		byte[] secretKey = KyberAlgorithm.getInstance((byte)2).secretKey;
+		if ((short)(receivedSecretKeyLength+255) > secretKey.length)
+		{
+			p = (short)(secretKey.length-receivedSecretKeyLength);
+		}
+		Util.arrayCopyNonAtomic(secretKey, receivedSecretKeyLength, buffer, (short)0x0000, p);
+		apdu.setOutgoingAndSend((short)0x0000, p);
+
+		receivedSecretKeyLength+=(short)255;
+		if (receivedSecretKeyLength < secretKey.length)
+		{
+			ISOException.throwIt((short)0x5000);
+		}
+		receivedSecretKeyLength=0;
+	}
+
+	private void obtainEncapsulation(APDU apdu)
+	{
+		byte[] buffer = apdu.getBuffer();
+		short p = (short)255;
+		byte[] cipheredText = KyberAlgorithm.getInstance((byte)2).cipheredText;
+		if ((short)(receivedEncapsulationLength+255) > cipheredText.length)
+		{
+			p = (short)(cipheredText.length-receivedEncapsulationLength);
+		}
+		Util.arrayCopyNonAtomic(cipheredText, receivedEncapsulationLength, buffer, (short)0x0000, p);
+		apdu.setOutgoingAndSend((short)0x0000, p);
+
+		receivedEncapsulationLength+=(short)255;
+		if (receivedEncapsulationLength < cipheredText.length)
+		{
+			ISOException.throwIt((short)0x5000);
+		}
+		receivedEncapsulationLength=0;
 	}
 
 	private void obtainPrivateKey(APDU apdu)
