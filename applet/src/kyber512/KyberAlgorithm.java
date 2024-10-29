@@ -60,6 +60,18 @@ public class KyberAlgorithm
         }
     }
 
+    public void decapsulate(short secretKeyBytes, short publicKeyBytes, short privateKeyBytes)
+    {
+        try
+        {
+
+        }
+        catch (Exception e)
+        {
+            ISOException.throwIt(ISO7816.SW_UNKNOWN);
+        }
+    }
+
     public void encapsulate()
     {
         try

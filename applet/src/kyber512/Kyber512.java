@@ -38,7 +38,7 @@ public class Kyber512 extends Applet
 			{
 				case (byte)0x01: this.generateKyber512KeyPair(apdu); break;
 				case (byte)0x02: this.encapsulate(apdu); break;
-//				case (byte)0x03: this.decapsulate(apdu); break;
+				case (byte)0x03: this.decapsulate(apdu); break;
 				case (byte)0x04: this.obtainPrivateKey(apdu); break;
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
 				case (byte)0x06: this.obtainSecretKey(apdu); break;
@@ -74,6 +74,12 @@ public class Kyber512 extends Applet
 	{
 		//temporarly disabled random for testing
 		kyber.encapsulate();
+	}
+
+	private void decapsulate(APDU apdu)
+	{
+		//temporarly disabled random for testing, temp hardcoded 512
+		kyber.decapsulate(KyberParams.paramsIndcpaSecretKeyBytesK512, KyberParams.paramsIndcpaPublicKeyBytesK512, KyberParams.Kyber512SKBytes);
 	}
 
 	private void obtainSecretKey(APDU apdu)
