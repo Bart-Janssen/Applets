@@ -43,12 +43,26 @@ public class Kyber512 extends Applet
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
 				case (byte)0x06: this.obtainSecretKey(apdu); break;
 				case (byte)0x07: this.obtainEncapsulation(apdu); break;
+				case (byte)0x08: this.getFreeRAM(apdu);
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
 			}
 		}
 		else ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
+	}
+
+	public void getFreeRAM(APDU apdu)
+	{
+		byte[] buffer = apdu.getBuffer();
+		byte[] ramUsageBuffer = new byte[2];
+		short availableRAM = JCSystem.getAvailableMemory(JCSystem.MEMORY_TYPE_TRANSIENT_DESELECT);
+		ramUsageBuffer[0] = (byte)(availableRAM >> 8);
+		ramUsageBuffer[1] = (byte)(availableRAM & 0xFF);
+
+		Util.arrayCopyNonAtomic(ramUsageBuffer, (short)0x0000, buffer, (short)0x0000, (short)ramUsageBuffer.length);
+		apdu.setOutgoingAndSend((short)0x0000, (short)ramUsageBuffer.length);
+		return;
 	}
 
 	public void generateKyber512KeyPair(APDU apdu)

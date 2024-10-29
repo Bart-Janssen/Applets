@@ -267,14 +267,13 @@ public class KyberAlgorithm
                 byte[] seedAndij = new byte[(short)(seed.length + ij.length)];
                 Util.arrayCopyNonAtomic(seed, (short)0, seedAndij, (short)0, (short)seed.length);
                 Util.arrayCopyNonAtomic(ij, (short)0, seedAndij, (short)seed.length, (short)ij.length);
-                this.keccak.reset();
                 this.keccak.setShakeDigestLength((short)buf.length);
                 this.keccak.doFinal(seedAndij, buf);
                 Util.arrayCopyNonAtomic(buf,(short)0, buff,(short)0, (short)504);
                 this.generateUniform(buff, (short)504, KyberParams.paramsN);
                 short ui = this.uniformI;
                 Poly.getInstance().arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
-                while (ui < KyberParams.paramsN)//Occasionally, this code is not always executed
+                while (ui < KyberParams.paramsN)
                 {
                     Util.arrayCopyNonAtomic(buf,(short)504, buff,(short)0, (short)168);
                     this.generateUniform(buff, (short)168, (short)(KyberParams.paramsN - ui));
