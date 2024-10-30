@@ -43,7 +43,7 @@ public class Kyber512 extends Applet
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
 				case (byte)0x06: this.obtainSecretKey(apdu); break;
 				case (byte)0x07: this.obtainEncapsulation(apdu); break;
-				case (byte)0x08: this.getFreeRAM(apdu);
+				case (byte)0x08: this.getFreeRAM(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
