@@ -596,6 +596,105 @@ public class Poly
         return r;
     }
 
+    public byte[] polyToMsg(short[] a)
+    {
+        byte[] msg = new byte[KyberParams.paramsSymBytes];
+        short t;
+        a = this.polyConditionalSubQ(a);//opt such that a is no return, but update parameter only
+        for (byte i = 0; i < (byte)(KyberParams.paramsN / 8); i++)
+        {
+            msg[i] = 0;
+            for (byte j = 0; j < 8; j++)
+            {
+                t = (short)(((short)((a[(short)(8 * i + j)] << 1) + (KyberParams.paramsQ / 2)) / KyberParams.paramsQ) & 1);
+                msg[i] = (byte)(msg[i] | (t << j));
+            }
+        }
+        return msg;
+    }
+
+    public short[] decompressPolyVector(byte[] a, byte paramsK)
+    {
+        short[] r = new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
+        short aa = 0;
+        short[] t;
+        switch (paramsK)
+        {
+            //Only kyber 512 for now
+            case 2:
+            case 3: default:
+            t = new short[4]; // has to be unsigned..
+            for (byte i = 0; i < paramsK; i++)
+            {
+                for (byte j = 0; j < (KyberParams.paramsN / 4); j++)
+                {
+                    t[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
+                    t[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
+                    t[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
+                    t[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
+                    aa+=5;
+                    for (byte k = 0; k < 4; k++)
+                    {
+                        //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
+                        Arithmetic.multiplyShorts((short)(t[k] & 0x3FF), KyberParams.paramsQ, multiplied);
+                        //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
+
+                        Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
+
+                        //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10
+                        short value = (short)((multiplied[0]<<6) | (((multiplied[1]>>8)&(short)0xFF) >> 2));
+
+                        this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
+                        RAM384[(short)(4 * j + k)] = value;
+                        this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
+                    }
+                }
+            }
+            break;
+        }
+        return r;
+    }
+
+    public short[] decompressPoly(byte[] a, byte paramsK)
+    {
+        short[] r = new short[KyberParams.paramsPolyBytes];
+        short aa = 0;
+        switch (paramsK)
+        {
+            //Only kyber 512 for now
+            case 2:
+            case 3: default:
+            for (short i = 0; i < KyberParams.paramsN / 2; i++)
+            {
+                //(((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ)
+                Arithmetic.multiplyShorts((short)((a[aa] & (short)0xFF) & 15), KyberParams.paramsQ, multiplied);
+                //((((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8)
+                Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
+                //r[(short)(2 * i + 0)] = (short) (((((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8) >> 4);
+                r[(short)(2 * i + 0)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
+
+                //(((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ)
+                Arithmetic.multiplyShorts((short)((a[aa] & 0xFF) >> 4), KyberParams.paramsQ, multiplied);
+                //((((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8)
+                Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
+                //r[(short)(2 * i + 1)] = (short) (((((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8) >> 4);
+                r[(short)(2 * i + 1)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
+                aa+=1;
+            }
+            break;
+        }
+        return r;
+    }
+
+    public short[] polySub(short[] polyA, short[] polyB)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            polyA[i] = (short)(polyA[i] - polyB[i]);
+        }
+        return polyA;
+    }
+
     public byte[] polyVectorToBytes(short[] polyA, byte paramsK)
     {
         //Optimize r as parameter

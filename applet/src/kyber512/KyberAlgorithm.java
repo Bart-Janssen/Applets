@@ -24,10 +24,13 @@ public class KyberAlgorithm
     private KeyPair keyPair;
     private short[] uniformR;
     private short uniformI = 0;
-    public byte[] cipheredText;
     public byte[] secretKey;
     private short[] publicKeyPolyvec;
     private byte[] seed;
+    public byte[] encapsulation;
+    public byte[] plain;
+    private short[] bp;
+    private short[] v;
 
     public void generateKeys(short privateKeyBytes)
     {
@@ -64,12 +67,100 @@ public class KyberAlgorithm
     {
         try
         {
-
+            byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
+            byte[] indcpaPrivateKey = new byte[secretKeyBytes];
+            Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, indcpaPrivateKey, (short)0, (short)indcpaPrivateKey.length);
+            byte[] publicKey = new byte[publicKeyBytes];
+            Util.arrayCopyNonAtomic(this.keyPair.privateKey, secretKeyBytes, publicKey, (short)0, (short)publicKey.length);
+            //buf renamed to plain
+            byte[] plain = this.decrypt(this.encapsulation, indcpaPrivateKey);
+            short ski = (short)(privateKeyBytes - (2 * KyberParams.paramsSymBytes));
+            byte[] newBuf = new byte[(short)(plain.length + KyberParams.paramsSymBytes)];
+            Util.arrayCopyNonAtomic(plain, (short)0, newBuf, (short)0, (short)plain.length);
+            Util.arrayCopyNonAtomic(this.keyPair.privateKey, ski, newBuf, (short)plain.length, KyberParams.paramsSymBytes);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+            byte[] kr = new byte[64];
+            this.keccak.doFinal(newBuf, kr);
+            byte[] subKr = new byte[(short)(kr.length - KyberParams.paramsSymBytes)];
+            Util.arrayCopyNonAtomic(kr, KyberParams.paramsSymBytes, subKr, (short)0, (short)subKr.length);
+            byte[] cmp = this.encrypt(plain, publicKey, subKr);
+            byte fail = this.constantTimeCompare(this.encapsulation, cmp);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+            byte[] krh = new byte[32];
+            this.keccak.doFinal(this.encapsulation, krh);
+            short index = (short)(privateKeyBytes - KyberParams.paramsSymBytes);
+            for (byte i = 0; i < KyberParams.paramsSymBytes; i++)
+            {
+                byte privateKeyIndex = (byte)(this.keyPair.privateKey[index] & (byte)0xFF);
+                byte krIndex = (byte)(kr[i] & (byte)0xFF);
+                kr[i] = (byte)(krIndex ^ (byte)(fail & (byte)0xFF & (byte)(privateKeyIndex ^ krIndex)));
+                index += 1;
+            }
+            byte[] tempBuf = new byte[(short)(KyberParams.paramsSymBytes + krh.length)];
+            Util.arrayCopyNonAtomic(kr, (short)0, tempBuf, (short)0, KyberParams.paramsSymBytes);
+            Util.arrayCopyNonAtomic(krh, (short)0, tempBuf, KyberParams.paramsSymBytes, (short)krh.length);
+            this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+            this.keccak.setShakeDigestLength((short)32);
+            this.keccak.doFinal(tempBuf, sharedSecretFixedLength);
+            this.plain = plain;
+            this.secretKey = sharedSecretFixedLength;
         }
         catch (Exception e)
         {
             ISOException.throwIt(ISO7816.SW_UNKNOWN);
         }
+    }
+
+    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey)
+    {
+        this.unpackCiphertext(packedCipherText, this.paramsK);
+        short[] unpackedPrivateKey = this.unpackPrivateKey(privateKey, this.paramsK);
+        this.bp = Poly.getInstance().polyVectorNTT(this.bp, this.paramsK);
+        short[] mp = Poly.getInstance().polyVectorPointWiseAccMont(unpackedPrivateKey, this.bp, this.paramsK);
+        mp = Poly.getInstance().polyInvNTTMont(mp);
+        mp = Poly.getInstance().polySub(this.v, mp);
+        mp = Poly.getInstance().polyReduce(mp);
+        return Poly.getInstance().polyToMsg(mp);
+    }
+
+    public short[] unpackPrivateKey(byte[] packedPrivateKey, byte paramsK)
+    {
+        return Poly.getInstance().polyVectorFromBytes(packedPrivateKey, paramsK);
+    }
+
+    public void unpackCiphertext(byte[] c, byte paramsK)
+    {
+        byte[] bpc;
+        byte[] vc;
+        switch (paramsK)
+        {
+            //Only kyber 512 for now
+            case 2: default:
+            bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
+            break;
+//            case 3:
+//                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
+//                break;
+//            default:
+//                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
+        }
+        Util.arrayCopyNonAtomic(c, (short)0, bpc, (short)0, (short)bpc.length);
+        vc = new byte[(short)(c.length - bpc.length)];
+        Util.arrayCopyNonAtomic(c, (short)bpc.length, vc, (short)0, (short)vc.length);
+        this.bp = Poly.getInstance().decompressPolyVector(bpc, paramsK);
+        this.v = Poly.getInstance().decompressPoly(vc, paramsK);
+    }
+
+    public byte constantTimeCompare(byte[] x, byte[] y)
+    {
+        if (x.length != y.length) return (byte)1;
+        byte v = 0;
+        for (short i = 0; i < x.length; i++)
+        {
+            v = (byte)((v & 0xFF) | ((x[i] & 0xFF) ^ (y[i] & 0xFF)));
+        }
+        //Byte.compare(v, (byte)0) - returns always v since implementation of Byte.compare is x-y, where x = v and y = 0; v-0 = v
+        return v;
     }
 
     public void encapsulate()
@@ -105,7 +196,7 @@ public class KyberAlgorithm
             this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
             this.keccak.setShakeDigestLength((short)32);
             this.keccak.doFinal(newKr, sharedSecret);
-            this.cipheredText = ciphertext;//dont do this, use it as reference
+            this.encapsulation = ciphertext;//dont do this, use it as reference
             this.secretKey = sharedSecret;//dont do this, use it as reference
         }
         catch (Exception e)
