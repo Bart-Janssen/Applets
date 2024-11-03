@@ -11,6 +11,7 @@ public class Kyber512 extends Applet
 	private short receivedPublicKeyLength = 0;
 	private short receivedSecretKeyLength = 0;
 	private short receivedEncapsulationLength = 0;
+	private short setEncapsulationLength = 0;
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
 
@@ -43,7 +44,8 @@ public class Kyber512 extends Applet
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
 				case (byte)0x06: this.obtainSecretKey(apdu); break;
 				case (byte)0x07: this.obtainEncapsulation(apdu); break;
-				case (byte)0x08: this.getFreeRAM(apdu); break;
+				case (byte)0x08: this.setEncapsulation(apdu); break;
+				case (byte)0x09: this.getFreeRAM(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
@@ -122,6 +124,18 @@ public class Kyber512 extends Applet
 			ISOException.throwIt((short)0x5000);
 		}
 		receivedEncapsulationLength=0;
+	}
+
+	private void setEncapsulation(APDU apdu)
+	{
+		byte[] buffer = apdu.getBuffer();
+		short dataLength = apdu.setIncomingAndReceive();
+		Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, KyberAlgorithm.getInstance((byte)2).encapsulation, setEncapsulationLength, dataLength);
+		setEncapsulationLength += dataLength;
+		if (setEncapsulationLength == (short)800)
+		{
+			setEncapsulationLength = 0;
+		}
 	}
 
 	private void obtainPrivateKey(APDU apdu)

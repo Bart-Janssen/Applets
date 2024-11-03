@@ -27,7 +27,7 @@ public class KyberAlgorithm
     public byte[] secretKey;
     private short[] publicKeyPolyvec;
     private byte[] seed;
-    public byte[] encapsulation;
+    public byte[] encapsulation = new byte[768];//todo, currently it is 512 max encapsulation possible
     public byte[] plain;
     private short[] bp;
     private short[] v;
@@ -44,9 +44,9 @@ public class KyberAlgorithm
             byte[] pkh = new byte[encodedHash.length];
             Util.arrayCopyNonAtomic(encodedHash, (short)0, pkh, (short)0, (short)encodedHash.length);
             byte[] rnd = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
-//            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//            random.nextBytes(rnd, (short)0, (short)32);
-//            random.close();
+            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+            random.nextBytes(rnd, (short)0, (short)32);
+            random.close();
             short offsetEnd = (short)keyPair.privateKey.length;
             Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, privateKeyFixedLength, (short)0, offsetEnd);
             Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.publicKey.length);
@@ -280,9 +280,9 @@ public class KyberAlgorithm
         byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         byte[] fullSeed = new byte[(byte)64];
-//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(publicSeed, (short)0, (short)32);
-//        random.close();
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+        random.nextBytes(publicSeed, (short)0, (short)32);
+        random.close();
         this.keccak.doFinal(publicSeed, fullSeed);
         Util.arrayCopyNonAtomic(fullSeed, (short)0, publicSeed, (short)0, KyberParams.paramsSymBytes);
         Util.arrayCopyNonAtomic(fullSeed, KyberParams.paramsSymBytes, noiseSeed, (short)0, KyberParams.paramsSymBytes);
