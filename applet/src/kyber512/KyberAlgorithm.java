@@ -9,6 +9,9 @@ public class KyberAlgorithm
 
     protected KyberAlgorithm(byte paramsK)
     {
+        //Create keccak instance so object is created, reserving EEPROM at startup rather than runtime
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        poly = Poly.getInstance();
         this.paramsK = paramsK;
         this.keyPair = KeyPair.getInstance(this.paramsK);
         switch (paramsK)
@@ -52,6 +55,7 @@ public class KyberAlgorithm
     private byte paramsK;
     private Keccak keccak;
     private KeyPair keyPair;
+    private Poly poly;
 
     //Conditional arrays based on paramsK
     byte[] vCompress;//packCiphertext
@@ -89,9 +93,9 @@ public class KyberAlgorithm
             this.generateKyberKeys();
             this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
             this.keccak.doFinal(this.keyPair.publicKey, EEPROM32B_1);
-            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-            random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
-            random.close();
+//            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+//            random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
+//            random.close();
             short offsetEnd = (short)(this.paramsK * KyberParams.paramsPolyBytes);
             Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.keyPair.publicKey.length);
             offsetEnd = (short)(offsetEnd + this.keyPair.publicKey.length);
@@ -328,9 +332,9 @@ public class KyberAlgorithm
     public void generateKyberKeys() throws Exception
     {
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(publicSeed, (short)0, (short)32);
-//        random.close();
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+//        random.nextBytes(this.EEPROM32B_1, (short)0, (short)32);
+        random.close();
         this.keccak.doFinal(this.EEPROM32B_1, this.EEPROM384B_X_PARAMS_K);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K, (short)0, this.EEPROM32B_1, (short)0, KyberParams.paramsSymBytes);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K, KyberParams.paramsSymBytes, this.EEPROM32B_2, (short)0, KyberParams.paramsSymBytes);
