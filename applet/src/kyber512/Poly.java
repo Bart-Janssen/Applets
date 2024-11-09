@@ -88,11 +88,11 @@ public class Poly
     {
         for (byte i = 0; i < paramsK; i++)
         {
+            //paramsK is max 4 here
+            //max end = 4+1 = 5 * 384 = 1920 - 4*384 = 384 always
             short start = (short)(i * KyberParams.paramsPolyBytes);
-            short end = (short)((i + 1) * KyberParams.paramsPolyBytes);
-            byte[] temp = new byte[(short)(end-start)];
-            Util.arrayCopyNonAtomic(polyA, start, temp, (short)0, (short)(end-start));
-            this.polyFromBytes(temp, RAM384);
+            Util.arrayCopyNonAtomic(polyA, start, RAM384B, (short)0, (short)384);
+            this.polyFromBytes(RAM384B, RAM384);
             this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i*384), (short)384);
         }
     }
