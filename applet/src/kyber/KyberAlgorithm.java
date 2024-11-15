@@ -5,6 +5,9 @@ import javacard.security.*;
 
 public class KyberAlgorithm
 {
+    //Random static variable for testing
+    public static boolean useRandom = false;
+
     private static KyberAlgorithm kyber = null;
 
     protected KyberAlgorithm(byte paramsK)
@@ -118,11 +121,8 @@ public class KyberAlgorithm
             this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
             this.keccak.doFinal(this.keyPair.publicKey, EEPROM32B_1);
             RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//            random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
-            for (byte i = 0; i < EEPROM32B_2.length; i++)//either this or the other line
-            {
-                EEPROM32B_2[i] = (byte)0x00;
-            }
+            if (useRandom) random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
+            else for (byte i = 0; i < EEPROM32B_2.length; i++){EEPROM32B_2[i] = (byte)0x00;}
             random.close();
             short offsetEnd = (short)(this.paramsK * KyberParams.paramsPolyBytes);
             Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.keyPair.publicKey.length);
@@ -243,11 +243,8 @@ public class KyberAlgorithm
             //newKr = EEPROM64B_1 when buf3 is no more used
 
             RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-            for (byte i = 0; i < EEPROM32B_1.length; i++)//either this or the other line
-            {
-                EEPROM32B_1[i] = 0x00;
-            }
-//        random.nextBytes(EEPROM32B_1, (short)0, (short)32);
+            if (useRandom) random.nextBytes(EEPROM32B_1, (short)0, (short)32);
+            else for (byte i = 0; i < EEPROM32B_1.length; i++){EEPROM32B_1[i] = 0x00;}
             random.close();
             this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
             this.keccak.doFinal(EEPROM32B_1, EEPROM32B_2);
@@ -355,7 +352,7 @@ public class KyberAlgorithm
     {
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(this.EEPROM32B_1, (short)0, (short)32);
+        if (useRandom) random.nextBytes(this.EEPROM32B_1, (short)0, (short)32);
         random.close();
         this.keccak.doFinal(this.EEPROM32B_1, this.EEPROM384B_X_PARAMS_K);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K, (short)0, this.EEPROM32B_1, (short)0, KyberParams.paramsSymBytes);
