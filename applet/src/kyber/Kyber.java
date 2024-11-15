@@ -11,7 +11,9 @@ public class Kyber extends Applet
 	private short receivedEncapsulationLength = 0;
 	private short setEncapsulationLength = 0;
 
-	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
+	private byte paramsK = 3;
+
+	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);//temp hard coded kyber 768
 
 	private Kyber(byte[] parameters, short offset)
 	{
@@ -35,7 +37,7 @@ public class Kyber extends Applet
 		{
 			switch (apduBuffer[ISO7816.OFFSET_INS])
 			{
-				case (byte)0x51: this.generateKyber512KeyPair(apdu); break;
+				case (byte)0x51: this.generateKyberKeyPair(apdu); break;
 				case (byte)0x52: this.encapsulate(apdu); break;
 				case (byte)0x53: this.decapsulate(apdu); break;
 				case (byte)0x04: this.obtainPrivateKey(apdu); break;
@@ -45,6 +47,7 @@ public class Kyber extends Applet
 				case (byte)0x08: this.setEncapsulation(apdu); break;
 				case (byte)0x09: this.getFreeRAM(apdu); break;
 				case (byte)0x10: this.clearSecret(apdu); break;
+				case (byte)0x11: this.bigTest(apdu); break;
 				default:
 					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
 					break;
@@ -57,8 +60,15 @@ public class Kyber extends Applet
 	{
 		for (byte i = 0; i < 32; i++)
 		{
-			KyberAlgorithm.getInstance((byte)2).secretKey[i] = (byte)0x00;
+			KyberAlgorithm.getInstance(paramsK).secretKey[i] = (byte)0x00;
 		}
+	}
+
+	public void bigTest(APDU apdu)
+	{
+		kyber.generateKeys();
+		kyber.encapsulate();
+		kyber.decapsulate();
 	}
 
 	public void getFreeRAM(APDU apdu)
@@ -74,9 +84,9 @@ public class Kyber extends Applet
 		return;
 	}
 
-	public void generateKyber512KeyPair(APDU apdu)
+	public void generateKyberKeyPair(APDU apdu)
 	{
-		kyber.generateKeys(KyberParams.Kyber512SKBytes);
+		kyber.generateKeys();
 	}
 
 	private void encapsulate(APDU apdu)
@@ -95,7 +105,7 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] secretKey = KyberAlgorithm.getInstance((byte)2).secretKey;
+		byte[] secretKey = KyberAlgorithm.getInstance(paramsK).secretKey;
 		if ((short)(receivedSecretKeyLength+255) > secretKey.length)
 		{
 			p = (short)(secretKey.length-receivedSecretKeyLength);
@@ -115,7 +125,7 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] encapsulation = KyberAlgorithm.getInstance((byte)2).encapsulation;
+		byte[] encapsulation = KyberAlgorithm.getInstance(paramsK).encapsulation;
 		if ((short)(receivedEncapsulationLength+255) > encapsulation.length)
 		{
 			p = (short)(encapsulation.length-receivedEncapsulationLength);
@@ -135,7 +145,7 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short dataLength = apdu.setIncomingAndReceive();
-		Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, KyberAlgorithm.getInstance((byte)2).encapsulation, setEncapsulationLength, dataLength);
+		Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, KyberAlgorithm.getInstance(paramsK).encapsulation, setEncapsulationLength, dataLength);
 		setEncapsulationLength += dataLength;
 		if (setEncapsulationLength == (short)800)
 		{
@@ -147,7 +157,7 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] privateKey = KeyPair.getInstance((byte)2).privateKey;
+		byte[] privateKey = KeyPair.getInstance(paramsK).privateKey;
 		if ((short)(receivedPrivateKeyLength+255) > privateKey.length)
 		{
 			p = (short)(privateKey.length-receivedPrivateKeyLength);
@@ -167,7 +177,7 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] publicKey = KeyPair.getInstance((byte)2).publicKey;
+		byte[] publicKey = KeyPair.getInstance(paramsK).publicKey;
 		if ((short)(receivedPublicKeyLength+255) > publicKey.length)
 		{
 			p = (short)(publicKey.length-receivedPublicKeyLength);
