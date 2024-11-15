@@ -32,11 +32,11 @@
         </cap>
         </javacard>
     </target>
-    <target name="kyber512">
+    <target name="kyber">
         <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
         <javacard jckit="sdks/HIDDEN">
-        <cap targetsdk="sdks/HIDDEN" aid="4B 79 62 65 72 00" package="applet.kyber" version="0.1" output="applet/Kyber/Kyber512.cap" sources="applet/src/kyber512">
-            <applet class="Kyber512" aid="4B 79 62 65 72"/>
+        <cap targetsdk="sdks/HIDDEN" aid="4B 79 62 65 72 00" package="applet.kyber" version="0.1" output="applet/Kyber/Kyber.cap" sources="applet/src/kyber">
+            <applet class="Kyber" aid="4B 79 62 65 72"/>
         </cap>
         </javacard>
     </target>

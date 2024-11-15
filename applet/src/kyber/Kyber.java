@@ -3,10 +3,8 @@ package applet.kyber;
 import javacard.framework.*;
 import javacard.security.*;
 
-public class Kyber512 extends Applet
+public class Kyber extends Applet
 {
-	private Keccak keccak = null;
-
 	private short receivedPrivateKeyLength = 0;
 	private short receivedPublicKeyLength = 0;
 	private short receivedSecretKeyLength = 0;
@@ -15,14 +13,14 @@ public class Kyber512 extends Applet
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance((byte)2);
 
-	private Kyber512(byte[] parameters, short offset)
+	private Kyber(byte[] parameters, short offset)
 	{
 		super.register(parameters, (short)(offset + 1), parameters[offset]);
 	}
 
 	public static void install(byte[] parameters, short offset, byte length)
 	{
-		new Kyber512(parameters, offset);
+		new Kyber(parameters, offset);
 	}
 
 	@Override
@@ -37,9 +35,9 @@ public class Kyber512 extends Applet
 		{
 			switch (apduBuffer[ISO7816.OFFSET_INS])
 			{
-				case (byte)0x01: this.generateKyber512KeyPair(apdu); break;
-				case (byte)0x02: this.encapsulate(apdu); break;
-				case (byte)0x03: this.decapsulate(apdu); break;
+				case (byte)0x51: this.generateKyber512KeyPair(apdu); break;
+				case (byte)0x52: this.encapsulate(apdu); break;
+				case (byte)0x53: this.decapsulate(apdu); break;
 				case (byte)0x04: this.obtainPrivateKey(apdu); break;
 				case (byte)0x05: this.obtainPublicKey(apdu); break;
 				case (byte)0x06: this.obtainSecretKey(apdu); break;
