@@ -30,14 +30,14 @@ public class KyberAlgorithm
                 this.vCompress = new byte[KyberParams.paramsPolyCompressedBytesK768];
                 this.bCompress = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
                 this.indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK768];
-                this.encapsulation = new byte[1088];//todo
+                this.encapsulation = new byte[1088];
                 this.privateKeyBytes = KyberParams.Kyber768SKBytes;
                 break;
             default:
                 this.vCompress = new byte[KyberParams.paramsPolyCompressedBytesK1024];
                 this.bCompress = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
                 this.indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK1024];
-                this.encapsulation = new byte[1568];//todo
+                this.encapsulation = new byte[1568];
                 this.privateKeyBytes = KyberParams.Kyber1024SKBytes;
                 break;
         }

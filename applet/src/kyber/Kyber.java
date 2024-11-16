@@ -11,7 +11,7 @@ public class Kyber extends Applet
 	private short receivedEncapsulationLength = 0;
 	private short setEncapsulationLength = 0;
 
-	private byte paramsK = 3;
+	private byte paramsK = 4;
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);//temp hard coded kyber 768
 
