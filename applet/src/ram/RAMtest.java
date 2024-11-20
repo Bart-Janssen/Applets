@@ -84,14 +84,15 @@ public class RAMtest extends Applet
 		{
 			//Creating 100 byte array removes 238 bytes from EEPROM
 			//Creating 1 byte array removes 34 byte from EEPROM
-			short[] eepromArray = new short[(short)1000];
+			//Creating 5000 short array uses 10011 bytes (1 short = 2 bytes + overhead)
+			short[] eepromArray = new short[(short)5000];
 			return;
 		}
 		//Create + fill EEPROM array
 		if (P1 == (byte)0x00 && P2 == (byte)0xB2)
 		{
-			short[] eepromArray = new short[(short)1000];//5FFF = OK, 6FFF NO
-			for (short i = 0x00;i < (short)1000;i++)
+			short[] eepromArray = new short[(short)5000];//5FFF = OK, 6FFF NO
+			for (short i = 0x00;i < (short)5000;i++)
 			{
 				eepromArray[i] = 0xFF;
 			}
