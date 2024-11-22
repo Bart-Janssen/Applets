@@ -56,7 +56,7 @@ public class KyberAlgorithm
         EEPROM672B_1 = new byte[672];
         EEPROM504B_1 = new byte[504];
         EEPROM768B_1 = new byte[768];
-        EEPROM1480B_1 = new byte[1480];
+        EEPROM1536B_1 = new byte[1536];
         RAM2B_1 = JCSystem.makeTransientByteArray((short)2, JCSystem.CLEAR_ON_DESELECT);
         EEPROM34_1 = new byte[34];
         EEPROM64B_1 = new byte[64];
@@ -101,7 +101,7 @@ public class KyberAlgorithm
     short[] EEPROM256S_1;
     byte[] EEPROM672B_1;
     byte[] EEPROM768B_1;
-    byte[] EEPROM1480B_1;
+    byte[] EEPROM1536B_1;
     byte[] EEPROM504B_1;
     short[] EEPROM384_1;
     short[] EEPROM384_2;
@@ -333,18 +333,20 @@ public class KyberAlgorithm
         switch (paramsK)
         {
             case 2:
-                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1480B_1, (short)0, KyberParams.paramsPolyvecBytesK512);
-                Poly.getInstance().polyVectorFromBytes(EEPROM1480B_1, paramsK, this.publicKeyPolyvec);
+                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1536B_1, (short)0, KyberParams.paramsPolyvecBytesK512);
+                Poly.getInstance().polyVectorFromBytes(EEPROM1536B_1, paramsK, this.publicKeyPolyvec);
                 Util.arrayCopyNonAtomic(packedPublicKey, KyberParams.paramsPolyvecBytesK512, this.seed, (short)0, (short)32);
                 break;
-            case 3: default:
-                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1480B_1, (short)0, KyberParams.paramsPolyvecBytesK768);
-                Poly.getInstance().polyVectorFromBytes(EEPROM1480B_1, paramsK, this.publicKeyPolyvec);
+            case 3:
+                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1536B_1, (short)0, KyberParams.paramsPolyvecBytesK768);
+                Poly.getInstance().polyVectorFromBytes(EEPROM1536B_1, paramsK, this.publicKeyPolyvec);
                 Util.arrayCopyNonAtomic(packedPublicKey, KyberParams.paramsPolyvecBytesK768, this.seed, (short)0, (short)32);
                 break;
-//            default:
-//                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK1024), paramsK));
-//                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, packedPublicKey.length));
+            default:
+                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1536B_1, (short)0, KyberParams.paramsPolyvecBytesK1024);
+                Poly.getInstance().polyVectorFromBytes(EEPROM1536B_1, paramsK, this.publicKeyPolyvec);
+                Util.arrayCopyNonAtomic(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, this.seed, (short)0, (short)32);
+                break;
         }
     }
 

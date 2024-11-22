@@ -13,7 +13,7 @@ public class Kyber extends Applet
 
 	private byte paramsK = 4;
 
-	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);//temp hard coded kyber 768
+	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);
 
 	private Kyber(byte[] parameters, short offset)
 	{
