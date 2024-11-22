@@ -109,7 +109,7 @@ public class Poly
             for (byte j = 0; j < 8; j++)
             {
                 mask = (short)(-1 * (short)(((msg[i] & 0xFF) >> j) & 1));
-                r[(short)(8 * i + j)] = (short) (mask & (short) ((KyberParams.paramsQ + 1) / 2));
+                r[(short)(8 * i + j)] = (short)(mask & (short)((KyberParams.paramsQ + 1) / 2));
             }
         }
     }
@@ -344,11 +344,11 @@ public class Poly
 
     public short barrettReduce(short a)
     {
-        //long shift = (((long) 1) << 26);
-        //short v = (short) ((shift + (KyberParams.paramsQ / 2)) / KyberParams.paramsQ);
+        //long shift = (((long)1) << 26);
+        //short v = (short)((shift + (KyberParams.paramsQ / 2)) / KyberParams.paramsQ);
         short v = (short)20159; //All static values, no calculation needed
 
-        //short t = (short) ((v * a) >> 26);
+        //short t = (short)((v * a) >> 26);
         Arithmetic.multiplyShorts(v,a,multiplied);
         short t = (short)(multiplied[0]>>10);// >> (26-16) = 10
 
@@ -378,7 +378,7 @@ public class Poly
 
     public short modQMulMont(short a, short b)
     {
-        //(long) ((long) a * (long) b)
+        //(long)((long)a * (long)b)
         Arithmetic.multiplyShorts(a,b, jc);
         return this.montgomeryReduce(jc);
     }
@@ -395,7 +395,7 @@ public class Poly
 
     public short montgomeryReduce(short[] jc)
     {
-        //short u = (short) (a * KyberParams.paramsQinv);
+        //short u = (short)(a * KyberParams.paramsQinv);
         short u = (short)((jc[1] * KyberParams.paramsQinv) & (short)0xFFFF);
 
         //int t = (int)(u * KyberParams.paramsQ);
@@ -587,9 +587,9 @@ public class Poly
         {
             t0 = ((short)(a[(short)((byte)2 * i)] & (short)0xFFFF));
             t1 = (short)((a[(short)((byte)2 * i + (byte)1)]) & (short)0xFFFF);
-            r[(short)((byte)3 * i + (byte)0)] = (byte) (t0 >>  (byte)0);
-            r[(short)((byte)3 * i + (byte)1)] = (byte) ((t0 >> (byte)8) | (t1 << (byte)4));
-            r[(short)((byte)3 * i + (byte)2)] = (byte) (t1 >>  (byte)4);
+            r[(short)((byte)3 * i + (byte)0)] = (byte)(t0 >>  (byte)0);
+            r[(short)((byte)3 * i + (byte)1)] = (byte)((t0 >> (byte)8) | (t1 << (byte)4));
+            r[(short)((byte)3 * i + (byte)2)] = (byte)(t1 >>  (byte)4);
         }
     }
 
@@ -628,11 +628,11 @@ public class Poly
                         aa+=5;
                         for (byte k = 0; k < 4; k++)
                         {
-                            //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
+                            //(long)(t[k] & 0x3FF) * (long)(KyberParams.paramsQ)
                             Arithmetic.multiplyShorts((short)(RAM32S_1[k] & 0x3FF), KyberParams.paramsQ, multiplied);
-                            //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
+                            //((long)(t[k] & 0x3FF) * (long)(KyberParams.paramsQ) + 512)
                             Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
-                            //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10
+                            //((long)(t[k] & 0x3FF) * (long)(KyberParams.paramsQ) + 512) >> 10
                             short value = (short)((multiplied[0]<<6) | (((multiplied[1]>>8)&(short)0xFF) >> 2));
 
                             this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
@@ -690,14 +690,14 @@ public class Poly
                     Arithmetic.multiplyShorts((short)((a[aa] & (short)0xFF) & 15), KyberParams.paramsQ, multiplied);
                     //((((int)(a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8)
                     Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
-                    //r[(short)(2 * i + 0)] = (short) (((((int)(a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8) >> 4);
+                    //r[(short)(2 * i + 0)] = (short)(((((int)(a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8) >> 4);
                     r[(short)(2 * i + 0)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
 
                     //(((int)(a[aa] & 0xFF) >> 4) * KyberParams.paramsQ)
                     Arithmetic.multiplyShorts((short)((a[aa] & 0xFF) >> 4), KyberParams.paramsQ, multiplied);
                     //((((int)(a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8)
                     Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
-                    //r[(short)(2 * i + 1)] = (short) (((((int)(a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8) >> 4);
+                    //r[(short)(2 * i + 1)] = (short)(((((int)(a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8) >> 4);
                     r[(short)(2 * i + 1)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
                     aa+=1;
                 }
