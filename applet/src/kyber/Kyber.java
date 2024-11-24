@@ -11,7 +11,7 @@ public class Kyber extends Applet
 	private short receivedEncapsulationLength = 0;
 	private short setEncapsulationLength = 0;
 
-	private byte paramsK = 4;
+	private byte paramsK = 2;
 
 	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);
 
@@ -157,16 +157,17 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] privateKey = KeyPair.getInstance(paramsK).privateKey;
-		if ((short)(receivedPrivateKeyLength+255) > privateKey.length)
+		byte[] privateKey = KyberAlgorithm.getInstance(paramsK).privateKey;
+		short privateKeyLength = KyberAlgorithm.getInstance(paramsK).privateKeyLength;
+		if ((short)(receivedPrivateKeyLength+255) > privateKeyLength)
 		{
-			p = (short)(privateKey.length-receivedPrivateKeyLength);
+			p = (short)(privateKeyLength-receivedPrivateKeyLength);
 		}
 		Util.arrayCopyNonAtomic(privateKey, receivedPrivateKeyLength, buffer, (short)0x0000, p);
 		apdu.setOutgoingAndSend((short)0x0000, p);
 
 		receivedPrivateKeyLength+=(short)255;
-		if (receivedPrivateKeyLength < privateKey.length)
+		if (receivedPrivateKeyLength < privateKeyLength)
 		{
 			ISOException.throwIt((short)0x5000);
 		}
@@ -177,16 +178,17 @@ public class Kyber extends Applet
 	{
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
-		byte[] publicKey = KeyPair.getInstance(paramsK).publicKey;
-		if ((short)(receivedPublicKeyLength+255) > publicKey.length)
+		byte[] publicKey = KyberAlgorithm.getInstance(paramsK).publicKey;
+		short publicKeyLength = KyberAlgorithm.getInstance(paramsK).publicKeyLength;
+		if ((short)(receivedPublicKeyLength+255) > publicKeyLength)
 		{
-			p = (short)(publicKey.length-receivedPublicKeyLength);
+			p = (short)(publicKeyLength-receivedPublicKeyLength);
 		}
 		Util.arrayCopyNonAtomic(publicKey, receivedPublicKeyLength, buffer, (short)0x0000, p);
 		apdu.setOutgoingAndSend((short)0x0000, p);
 
 		receivedPublicKeyLength+=(short)255;
-		if (receivedPublicKeyLength < publicKey.length)
+		if (receivedPublicKeyLength < publicKeyLength)
 		{
 			ISOException.throwIt((short)0x5000);
 		}
