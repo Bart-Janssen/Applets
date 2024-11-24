@@ -155,7 +155,7 @@ public class KyberAlgorithm
             random.close();
             short offsetEnd = (short)(this.paramsK * KyberParams.paramsPolyBytes);
             Util.arrayCopyNonAtomic(this.publicKey, (short)0, this.privateKey, offsetEnd, this.publicKeyLength);
-            offsetEnd = (short)(offsetEnd + this.publicKey.length);
+            offsetEnd = (short)(offsetEnd + this.publicKeyLength);
             Util.arrayCopyNonAtomic(this.EEPROM32B_1, (short)0, this.privateKey, offsetEnd, (short)this.EEPROM32B_1.length);
             offsetEnd += (short)this.EEPROM32B_1.length;
             Util.arrayCopyNonAtomic(this.EEPROM32B_2, (short)0, this.privateKey, offsetEnd, (short)this.EEPROM32B_2.length);
