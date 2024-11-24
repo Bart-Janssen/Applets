@@ -126,15 +126,16 @@ public class Kyber extends Applet
 		byte[] buffer = apdu.getBuffer();
 		short p = (short)255;
 		byte[] encapsulation = KyberAlgorithm.getInstance(paramsK).encapsulation;
-		if ((short)(receivedEncapsulationLength+255) > encapsulation.length)
+		short encapsulationLength = KyberAlgorithm.getInstance(paramsK).encapsulationLength;
+		if ((short)(receivedEncapsulationLength+255) > encapsulationLength)
 		{
-			p = (short)(encapsulation.length-receivedEncapsulationLength);
+			p = (short)(encapsulationLength-receivedEncapsulationLength);
 		}
 		Util.arrayCopyNonAtomic(encapsulation, receivedEncapsulationLength, buffer, (short)0x0000, p);
 		apdu.setOutgoingAndSend((short)0x0000, p);
 
 		receivedEncapsulationLength+=(short)255;
-		if (receivedEncapsulationLength < encapsulation.length)
+		if (receivedEncapsulationLength < encapsulationLength)
 		{
 			ISOException.throwIt((short)0x5000);
 		}
