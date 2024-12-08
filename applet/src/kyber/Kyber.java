@@ -9,6 +9,7 @@ public class Kyber extends Applet
 	private static short setEncapsulationLength = 0;
 	private static short receivedDataLength = 0;
 	private static byte receivedDataType = 0;
+	private static boolean encapsulationIsSet = false;
 
 	private static KyberAlgorithm kyber;
 	private static AESKey sharedSecret;
@@ -46,13 +47,13 @@ public class Kyber extends Applet
 			case (short)0x0009: this.getFreeRAM(apdu); break;
 			case (short)0x0010: this.clearSecret(apdu); break;
 			case (short)0x0011: this.bigTest(apdu); break;
-			case (short)0x0012: this.AES(apdu, Cipher.MODE_ENCRYPT); break;
-			case (short)0x0013: this.AES(apdu, Cipher.MODE_DECRYPT); break;
+			case (short)0x0012: this.aes(apdu, Cipher.MODE_ENCRYPT); break;
+			case (short)0x0013: this.aes(apdu, Cipher.MODE_DECRYPT); break;
 			default: ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED); break;
 		}
 	}
 
-	private void AES(APDU apdu, byte cipherMode)
+	private void aes(APDU apdu, byte cipherMode)
 	{
 		short length = apdu.setIncomingAndReceive();
 		if (length != 32) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
@@ -76,7 +77,7 @@ public class Kyber extends Applet
 		kyber = KyberAlgorithm.getInstance((byte)2);
 		this.generateKyberKeyPair(apdu, (byte)2);
 		this.encapsulate(apdu);
-//		this.decapsulate(apdu);
+		this.decapsulate(apdu);
 	}
 
 	public void getFreeRAM(APDU apdu)
@@ -94,6 +95,7 @@ public class Kyber extends Applet
 		sharedSecret.clearKey();
 		kyber = KyberAlgorithm.getInstance(paramsK);
 		kyber.generateKeys();
+		encapsulationIsSet = false;
 	}
 
 	private void encapsulate(APDU apdu)
@@ -101,10 +103,12 @@ public class Kyber extends Applet
 		sharedSecret.clearKey();
 		kyber.encapsulate();
 		sharedSecret.setKey(KyberAlgorithm.secretKey, (byte)0x00);
+		encapsulationIsSet = true;
 	}
 
 	private void decapsulate(APDU apdu)
 	{
+		if (!encapsulationIsSet) ISOException.throwIt((short)0x6996);//Data must be updated again
 		sharedSecret.clearKey();
 		kyber.decapsulate();
 		sharedSecret.setKey(KyberAlgorithm.secretKey, (byte)0x00);
@@ -132,6 +136,10 @@ public class Kyber extends Applet
 		short dataLength = apdu.setIncomingAndReceive();
 		Util.arrayCopyNonAtomic(apdu.getBuffer(), ISO7816.OFFSET_CDATA, KyberAlgorithm.encapsulation, setEncapsulationLength, dataLength);
 		setEncapsulationLength += dataLength;
-		if (setEncapsulationLength == KyberAlgorithm.encapsulationLength) setEncapsulationLength = 0;
+		if (setEncapsulationLength == KyberAlgorithm.encapsulationLength)
+		{
+			setEncapsulationLength = 0;
+			encapsulationIsSet = true;
+		}
 	}
 }
