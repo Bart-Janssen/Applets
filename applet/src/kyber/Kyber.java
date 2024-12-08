@@ -2,22 +2,24 @@ package applet.kyber;
 
 import javacard.framework.*;
 import javacard.security.*;
+import javacardx.crypto.Cipher;
 
 public class Kyber extends Applet
 {
-	private short receivedPrivateKeyLength = 0;
-	private short receivedPublicKeyLength = 0;
-	private short receivedSecretKeyLength = 0;
-	private short receivedEncapsulationLength = 0;
-	private short setEncapsulationLength = 0;
+	private static short setEncapsulationLength = 0;
+	private static short receivedDataLength = 0;
+	private static byte receivedDataType = 0;
 
-	private byte paramsK = 2;
-
-	private KyberAlgorithm kyber = KyberAlgorithm.getInstance(paramsK);
+	private static KyberAlgorithm kyber;
+	private static AESKey sharedSecret;
+	private static Cipher aesCBC;
 
 	private Kyber(byte[] parameters, short offset)
 	{
 		super.register(parameters, (short)(offset + 1), parameters[offset]);
+		kyber = KyberAlgorithm.getInstance((byte)2);
+		aesCBC = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+		sharedSecret = (AESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_256, false);
 	}
 
 	public static void install(byte[] parameters, short offset, byte length)
@@ -28,171 +30,108 @@ public class Kyber extends Applet
 	@Override
 	public void process(APDU apdu) throws ISOException
 	{
-		byte[] apduBuffer = apdu.getBuffer();
-
-		// ignore the applet select command dispatched to the process
-		if (selectingApplet()) return;
-
-		if (apduBuffer[ISO7816.OFFSET_CLA] == (byte)0x00)
+		if (super.selectingApplet()) return;
+		switch (Util.getShort(apdu.getBuffer(), ISO7816.OFFSET_P1))
 		{
-			switch (apduBuffer[ISO7816.OFFSET_INS])
-			{
-				case (byte)0x51: this.generateKyberKeyPair(apdu); break;
-				case (byte)0x52: this.encapsulate(apdu); break;
-				case (byte)0x53: this.decapsulate(apdu); break;
-				case (byte)0x04: this.obtainPrivateKey(apdu); break;
-				case (byte)0x05: this.obtainPublicKey(apdu); break;
-				case (byte)0x06: this.obtainSecretKey(apdu); break;
-				case (byte)0x07: this.obtainEncapsulation(apdu); break;
-				case (byte)0x08: this.setEncapsulation(apdu); break;
-				case (byte)0x09: this.getFreeRAM(apdu); break;
-				case (byte)0x10: this.clearSecret(apdu); break;
-				case (byte)0x11: this.bigTest(apdu); break;
-				default:
-					ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED);
-					break;
-			}
+			case (short)0x0512: this.generateKyberKeyPair(apdu, (byte)2); break;
+			case (short)0x0768: this.generateKyberKeyPair(apdu, (byte)3); break;
+			case (short)0x1024: this.generateKyberKeyPair(apdu, (byte)4); break;
+			case (short)0x0001: this.encapsulate(apdu); break;
+			case (short)0x0002: this.decapsulate(apdu); break;
+			case (short)0x0003: this.setEncapsulation(apdu); break;
+			case (short)0x0004: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
+			case (short)0x0005: this.obtainData(apdu, KyberAlgorithm.publicKey, KyberAlgorithm.publicKeyLength, (byte)2); break;
+			case (short)0x0006: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
+			case (short)0x0007: this.obtainData(apdu, KyberAlgorithm.encapsulation, KyberAlgorithm.encapsulationLength, (byte)4); break;
+			case (short)0x0009: this.getFreeRAM(apdu); break;
+			case (short)0x0010: this.clearSecret(apdu); break;
+			case (short)0x0011: this.bigTest(apdu); break;
+			case (short)0x0012: this.AES(apdu, Cipher.MODE_ENCRYPT); break;
+			case (short)0x0013: this.AES(apdu, Cipher.MODE_DECRYPT); break;
+			default: ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED); break;
 		}
-		else ISOException.throwIt(ISO7816.SW_CLA_NOT_SUPPORTED);
+	}
+
+	private void AES(APDU apdu, byte cipherMode)
+	{
+		short length = apdu.setIncomingAndReceive();
+		if (length != 32) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		if (!sharedSecret.isInitialized()) ISOException.throwIt((short)0x6996);//Data must be updated again
+		byte[] buffer = apdu.getBuffer();
+		aesCBC.init(sharedSecret, cipherMode);
+		aesCBC.doFinal(buffer, ISO7816.OFFSET_CDATA, length, buffer, ISO7816.OFFSET_CDATA);
+		apdu.setOutgoingAndSend(ISO7816.OFFSET_CDATA, length);
 	}
 
 	public void clearSecret(APDU apdu)
 	{
 		for (byte i = 0; i < 32; i++)
 		{
-			KyberAlgorithm.getInstance(paramsK).secretKey[i] = (byte)0x00;
+			KyberAlgorithm.secretKey[i] = 0x00;
 		}
 	}
 
 	public void bigTest(APDU apdu)
 	{
-		kyber.generateKeys();
-		kyber.encapsulate();
-		kyber.decapsulate();
+		kyber = KyberAlgorithm.getInstance((byte)2);
+		this.generateKyberKeyPair(apdu, (byte)2);
+		this.encapsulate(apdu);
+//		this.decapsulate(apdu);
 	}
 
 	public void getFreeRAM(APDU apdu)
 	{
-		byte[] buffer = apdu.getBuffer();
 		byte[] ramUsageBuffer = new byte[2];
 		short availableRAM = JCSystem.getAvailableMemory(JCSystem.MEMORY_TYPE_TRANSIENT_DESELECT);
 		ramUsageBuffer[0] = (byte)(availableRAM >> 8);
 		ramUsageBuffer[1] = (byte)(availableRAM & 0xFF);
-
-		Util.arrayCopyNonAtomic(ramUsageBuffer, (short)0x0000, buffer, (short)0x0000, (short)ramUsageBuffer.length);
+		Util.arrayCopyNonAtomic(ramUsageBuffer, (short)0x0000, apdu.getBuffer(), (short)0x0000, (short)ramUsageBuffer.length);
 		apdu.setOutgoingAndSend((short)0x0000, (short)ramUsageBuffer.length);
-		return;
 	}
 
-	public void generateKyberKeyPair(APDU apdu)
+	public void generateKyberKeyPair(APDU apdu, byte paramsK)
 	{
+		sharedSecret.clearKey();
+		kyber = KyberAlgorithm.getInstance(paramsK);
 		kyber.generateKeys();
 	}
 
 	private void encapsulate(APDU apdu)
 	{
-		//temporarly disabled random for testing
+		sharedSecret.clearKey();
 		kyber.encapsulate();
+		sharedSecret.setKey(KyberAlgorithm.secretKey, (byte)0x00);
 	}
 
 	private void decapsulate(APDU apdu)
 	{
-		//temporarly disabled random for testing
+		sharedSecret.clearKey();
 		kyber.decapsulate();
+		sharedSecret.setKey(KyberAlgorithm.secretKey, (byte)0x00);
 	}
 
-	private void obtainSecretKey(APDU apdu)
+	private void obtainData(APDU apdu, byte[] data, short length, byte type)
 	{
-		byte[] buffer = apdu.getBuffer();
-		short p = (short)255;
-		byte[] secretKey = KyberAlgorithm.getInstance(paramsK).secretKey;
-		if ((short)(receivedSecretKeyLength+255) > secretKey.length)
+		//type 1 = private key, 2 = public key, 3 = secret, 4 = encapsulation
+		if (type != receivedDataType)
 		{
-			p = (short)(secretKey.length-receivedSecretKeyLength);
+			receivedDataLength=0;
+			receivedDataType = type;
 		}
-		Util.arrayCopyNonAtomic(secretKey, receivedSecretKeyLength, buffer, (short)0x0000, p);
-		apdu.setOutgoingAndSend((short)0x0000, p);
-
-		receivedSecretKeyLength+=(short)255;
-		if (receivedSecretKeyLength < secretKey.length)
-		{
-			ISOException.throwIt((short)0x5000);
-		}
-		receivedSecretKeyLength=0;
-	}
-
-	private void obtainEncapsulation(APDU apdu)
-	{
-		byte[] buffer = apdu.getBuffer();
-		short p = (short)255;
-		byte[] encapsulation = KyberAlgorithm.getInstance(paramsK).encapsulation;
-		short encapsulationLength = KyberAlgorithm.getInstance(paramsK).encapsulationLength;
-		if ((short)(receivedEncapsulationLength+255) > encapsulationLength)
-		{
-			p = (short)(encapsulationLength-receivedEncapsulationLength);
-		}
-		Util.arrayCopyNonAtomic(encapsulation, receivedEncapsulationLength, buffer, (short)0x0000, p);
-		apdu.setOutgoingAndSend((short)0x0000, p);
-
-		receivedEncapsulationLength+=(short)255;
-		if (receivedEncapsulationLength < encapsulationLength)
-		{
-			ISOException.throwIt((short)0x5000);
-		}
-		receivedEncapsulationLength=0;
+		short chunkSize = 255;
+		if ((short)(receivedDataLength+255) > length) chunkSize = (short)(length-receivedDataLength);
+		Util.arrayCopyNonAtomic(data, receivedDataLength, apdu.getBuffer(), (short)0x0000, chunkSize);
+		apdu.setOutgoingAndSend((short)0x0000, chunkSize);
+		receivedDataLength+=255;
+		if (receivedDataLength < length)ISOException.throwIt((short)0x5000);
+		receivedDataLength=0;
 	}
 
 	private void setEncapsulation(APDU apdu)
 	{
-		byte[] buffer = apdu.getBuffer();
 		short dataLength = apdu.setIncomingAndReceive();
-		Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, KyberAlgorithm.getInstance(paramsK).encapsulation, setEncapsulationLength, dataLength);
+		Util.arrayCopyNonAtomic(apdu.getBuffer(), ISO7816.OFFSET_CDATA, KyberAlgorithm.encapsulation, setEncapsulationLength, dataLength);
 		setEncapsulationLength += dataLength;
-		if (setEncapsulationLength == (short)800)
-		{
-			setEncapsulationLength = 0;
-		}
-	}
-
-	private void obtainPrivateKey(APDU apdu)
-	{
-		byte[] buffer = apdu.getBuffer();
-		short p = (short)255;
-		byte[] privateKey = KyberAlgorithm.getInstance(paramsK).privateKey;
-		short privateKeyLength = KyberAlgorithm.getInstance(paramsK).privateKeyLength;
-		if ((short)(receivedPrivateKeyLength+255) > privateKeyLength)
-		{
-			p = (short)(privateKeyLength-receivedPrivateKeyLength);
-		}
-		Util.arrayCopyNonAtomic(privateKey, receivedPrivateKeyLength, buffer, (short)0x0000, p);
-		apdu.setOutgoingAndSend((short)0x0000, p);
-
-		receivedPrivateKeyLength+=(short)255;
-		if (receivedPrivateKeyLength < privateKeyLength)
-		{
-			ISOException.throwIt((short)0x5000);
-		}
-		receivedPrivateKeyLength=0;
-	}
-
-	private void obtainPublicKey(APDU apdu)
-	{
-		byte[] buffer = apdu.getBuffer();
-		short p = (short)255;
-		byte[] publicKey = KyberAlgorithm.getInstance(paramsK).publicKey;
-		short publicKeyLength = KyberAlgorithm.getInstance(paramsK).publicKeyLength;
-		if ((short)(receivedPublicKeyLength+255) > publicKeyLength)
-		{
-			p = (short)(publicKeyLength-receivedPublicKeyLength);
-		}
-		Util.arrayCopyNonAtomic(publicKey, receivedPublicKeyLength, buffer, (short)0x0000, p);
-		apdu.setOutgoingAndSend((short)0x0000, p);
-
-		receivedPublicKeyLength+=(short)255;
-		if (receivedPublicKeyLength < publicKeyLength)
-		{
-			ISOException.throwIt((short)0x5000);
-		}
-		receivedPublicKeyLength=0;
+		if (setEncapsulationLength == KyberAlgorithm.encapsulationLength) setEncapsulationLength = 0;
 	}
 }
