@@ -40,15 +40,20 @@ public class Kyber extends Applet
 			case (short)0x0001: this.encapsulate(apdu); break;
 			case (short)0x0002: this.decapsulate(apdu); break;
 			case (short)0x0003: this.setEncapsulation(apdu); break;
-			case (short)0x0004: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
-			case (short)0x0005: this.obtainData(apdu, KyberAlgorithm.publicKey, KyberAlgorithm.publicKeyLength, (byte)2); break;
-			case (short)0x0006: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
-			case (short)0x0007: this.obtainData(apdu, KyberAlgorithm.encapsulation, KyberAlgorithm.encapsulationLength, (byte)4); break;
-			case (short)0x0009: this.getFreeRAM(apdu); break;
-			case (short)0x0010: this.clearSecret(apdu); break;
-			case (short)0x0011: this.bigTest(apdu); break;
-			case (short)0x0012: this.aes(apdu, Cipher.MODE_ENCRYPT); break;
-			case (short)0x0013: this.aes(apdu, Cipher.MODE_DECRYPT); break;
+			case (short)0x0004: this.obtainData(apdu, KyberAlgorithm.publicKey, KyberAlgorithm.publicKeyLength, (byte)2); break;
+			case (short)0x0005: this.obtainData(apdu, KyberAlgorithm.encapsulation, KyberAlgorithm.encapsulationLength, (byte)4); break;
+			case (short)0x0006: this.aes(apdu, Cipher.MODE_ENCRYPT); break;
+			case (short)0x0007: this.aes(apdu, Cipher.MODE_DECRYPT); break;
+
+			//WARNING: Enable these functions *only* for testing purposes!
+			//Enabling these functions exposes sensitive data and renders the card critically insecure!
+			//Use at your own risk and ensure they are disabled in production!
+			case (short)0x1001: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
+			case (short)0x1002: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
+			case (short)0x1003: this.clearSecret(apdu); break;
+
+			case (short)0x1004: this.getFreeRAM(apdu); break;
+			case (short)0x1005: this.bigTest(apdu); break;
 			default: ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED); break;
 		}
 	}
