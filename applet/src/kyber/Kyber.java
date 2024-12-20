@@ -48,12 +48,9 @@ public class Kyber extends Applet
 			//WARNING: Enable these functions *only* for testing purposes!
 			//Enabling these functions exposes sensitive data and renders the card critically insecure!
 			//Use at your own risk and ensure they are disabled in production!
-			case (short)0x1001: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
-			case (short)0x1002: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
-			case (short)0x1003: this.clearSecret(apdu); break;
-
-			case (short)0x1004: this.getFreeRAM(apdu); break;
-			case (short)0x1005: this.bigTest(apdu); break;
+//			case (short)0x1001: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
+//			case (short)0x1002: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
+//			case (short)0x1003: this.clearSecret(apdu); break;
 			default: ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED); break;
 		}
 	}
@@ -75,24 +72,6 @@ public class Kyber extends Applet
 		{
 			KyberAlgorithm.secretKey[i] = 0x00;
 		}
-	}
-
-	public void bigTest(APDU apdu)
-	{
-		kyber = KyberAlgorithm.getInstance((byte)2);
-		this.generateKyberKeyPair(apdu, (byte)2);
-		this.encapsulate(apdu);
-		this.decapsulate(apdu);
-	}
-
-	public void getFreeRAM(APDU apdu)
-	{
-		byte[] ramUsageBuffer = new byte[2];
-		short availableRAM = JCSystem.getAvailableMemory(JCSystem.MEMORY_TYPE_TRANSIENT_DESELECT);
-		ramUsageBuffer[0] = (byte)(availableRAM >> 8);
-		ramUsageBuffer[1] = (byte)(availableRAM & 0xFF);
-		Util.arrayCopyNonAtomic(ramUsageBuffer, (short)0x0000, apdu.getBuffer(), (short)0x0000, (short)ramUsageBuffer.length);
-		apdu.setOutgoingAndSend((short)0x0000, (short)ramUsageBuffer.length);
 	}
 
 	public void generateKyberKeyPair(APDU apdu, byte paramsK)
