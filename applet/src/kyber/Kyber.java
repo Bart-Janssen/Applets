@@ -51,6 +51,8 @@ public class Kyber extends Applet
 //			case (short)0x1001: this.obtainData(apdu, KyberAlgorithm.privateKey, KyberAlgorithm.privateKeyLength, (byte)1); break;
 //			case (short)0x1002: this.obtainData(apdu, KyberAlgorithm.secretKey, (short)32, (byte)3); break;
 //			case (short)0x1003: this.clearSecret(apdu); break;
+//			case (short)0x1004: KyberAlgorithm.useRandom = true; break;
+//			case (short)0x1005: KyberAlgorithm.useRandom = false; break;
 			default: ISOException.throwIt(ISO7816.SW_INS_NOT_SUPPORTED); break;
 		}
 	}

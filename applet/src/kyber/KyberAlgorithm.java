@@ -6,7 +6,7 @@ import javacard.security.*;
 public class KyberAlgorithm
 {
     //Random static variable for testing
-    public static boolean useRandom = false;
+    public static boolean useRandom = true;
 
     private static KyberAlgorithm kyber = null;
 
